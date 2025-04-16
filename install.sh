@@ -7,13 +7,6 @@ echo "====================================="
 echo "This script will install dKV from https://github.com/ValentinKolb/dKV"
 echo
 
-# Ask for confirmation
-read -p "Do you want to proceed with the installation? (y/N): " confirm
-if [[ "$confirm" != [yY] && "$confirm" != [yY][eE][sS] ]]; then
-    echo "Installation aborted."
-    exit 0
-fi
-
 # Check if Git is installed
 if ! command -v git &> /dev/null; then
     echo "Error: Git is not installed. Please install Git before continuing."
