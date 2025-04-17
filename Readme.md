@@ -14,22 +14,52 @@ leveraging RAFT consensus for linearizability and fault tolerance.*
 
 ## Quick Start
 
-Install the library as command line tool:
+Install the command line tool:
 
 ```bash
+# This will compile the dKV CLI from source and install it in your $PATH - a precompiled binary will be available in the future
 curl -s https://raw.githubusercontent.com/ValentinKolb/dKV/refs/heads/main/install.sh | bash
-```
 
-Start a local server and perform basic operations:
-
-```bash
-# Start local server
-dkv serve --shards="100:lstore"
-
-# Perform operations
+# Use it (requires a server running - see below)
 dkv kv set --shard=100 foo bar
 dkv kv get --shard=100 foo 
-# Output: key=foo, found=true, value=bar
+```
+
+It is recommended to use docker to deploy the server. The following command starts a local single node server:
+
+```bash
+export DKV_TIMEOUT=10 # Set config values for the server as env vars 
+
+docker run -p 8080:8080 ghcr.io/valentinkolb/dkv:latest --workers=100 # <- and/or set dkv config flags here
+```
+For deployments an example [docker compose](https://github.com/ValentinKolb/dKV/blob/main/compose.yml) file is provided.
+
+Alternatively you can use the CLI to start a server:
+
+```bash
+dkv serve --timeout="10" --workers=100
+```
+
+## Configuration
+
+To see all available configuration options for the server, run:
+
+```bash
+dkv serve --help
+
+# Also:
+dkv kv --help # for kv operations
+dkv lock --help # for lock operations
+```
+
+All command line flags can be set via environment variables by prefixing them with `DKV_`:
+
+```env
+# --timeout=5 will become_
+DKV_TIMEOUT=5
+
+# --log-level=debug will become:
+DKV_LOG_LEVEL=debug
 ```
 
 ## Benchmarks
