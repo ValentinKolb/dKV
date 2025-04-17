@@ -46,11 +46,11 @@ func (c *serverConnector) Listen(config common.ServerConfig) (net.Listener, erro
 // --------------------------------------------------------------------------
 
 // NewUnixDefaultServerTransport creates a new Unix server transport with default buffer size
-func NewUnixDefaultServerTransport() transport.IRPCServerTransport {
-	return NewUnixServerTransport(defaultBufferSize)
+func NewUnixDefaultServerTransport(workers int) transport.IRPCServerTransport {
+	return NewUnixServerTransport(defaultBufferSize, workers)
 }
 
 // NewUnixServerTransport creates a new Unix server transport with specified buffer size
-func NewUnixServerTransport(bufferSize uint64) transport.IRPCServerTransport {
-	return base.NewBaseServerTransport(&serverConnector{}, bufferSize)
+func NewUnixServerTransport(bufferSize, workers int) transport.IRPCServerTransport {
+	return base.NewBaseServerTransport(&serverConnector{}, bufferSize, workers)
 }

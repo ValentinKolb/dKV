@@ -18,8 +18,14 @@ func writeFrame(conn net.Conn, shardID uint64, requestID uint64, data []byte) er
 	binary.BigEndian.PutUint64(header[8:16], requestID)
 	binary.BigEndian.PutUint32(header[16:20], uint32(len(data)))
 
-	b := net.Buffers{header, data}
-	_, err := b.WriteTo(conn)
+	_, err := conn.Write(header)
+	if err != nil {
+		return err
+	}
+	_, err = conn.Write(data)
+	if err != nil {
+		return err
+	}
 	return err
 }
 

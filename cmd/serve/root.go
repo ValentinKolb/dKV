@@ -41,10 +41,10 @@ func init() {
 	ServeCmd.PersistentFlags().Int(key, 100, cmdUtil.WrapString("(ConfServerModeMultiNode Mode) RTTMillisecond defines the average Round Trip Time (RTT) in milliseconds between two NodeHost instances. \nOther raft configuration parameters (ElectionRTT=value/10, HeartbeatRTT=value/100) are derived from this value"))
 
 	key = "snapshot-entries"
-	ServeCmd.PersistentFlags().Int(key, 10, cmdUtil.WrapString("(ConfServerModeMultiNode Mode) SnapshotEntries defines how often the state machine should be snapshotted automatically. It is defined in terms of the number of applied Raft log entries. SnapshotEntries can be set to 0 to disable such automatic snapshotting (not recommended)"))
+	ServeCmd.PersistentFlags().Int(key, 100_000, cmdUtil.WrapString("(ConfServerModeMultiNode Mode) SnapshotEntries defines how often the state machine should be snapshotted automatically. It is defined in terms of the number of applied Raft log entries. SnapshotEntries can be set to 0 to disable such automatic snapshotting (not recommended)"))
 
 	key = "compaction-overhead"
-	ServeCmd.PersistentFlags().Int(key, 5, cmdUtil.WrapString("(ConfServerModeMultiNode Mode) CompactionOverhead defines the number of snapshots that should be retained in the system. When a new snapshot is generated, the system will attempt to remove older snapshots that go beyond the specified number of retained snapshots. Recommended value is about 1/2 of SnapshotEntries"))
+	ServeCmd.PersistentFlags().Int(key, 5000, cmdUtil.WrapString("(ConfServerModeMultiNode Mode) CompactionOverhead defines the number of snapshots that should be retained in the system. When a new snapshot is generated, the system will attempt to remove older snapshots that go beyond the specified number of retained snapshots. Recommended value is about 1/2 of SnapshotEntries"))
 
 	key = "data-dir"
 	ServeCmd.PersistentFlags().String(key, "data", cmdUtil.WrapString("(ConfServerModeMultiNode Mode) DataDir is the directory used for storing the snapshots"))
@@ -60,6 +60,12 @@ func init() {
 
 	key = "endpoint"
 	ServeCmd.PersistentFlags().String(key, "0.0.0.0:8080", cmdUtil.WrapString("The address on which the API will listen (e.g. http:localhost:8080, /tmp/dkv.sock, ...)"))
+
+	key = "workers"
+	ServeCmd.PersistentFlags().Int(key, 1000, cmdUtil.WrapString("How many worker the server should use per connection (ignored for http)"))
+
+	key = "buffer-pool-size"
+	ServeCmd.PersistentFlags().Int(key, 64, cmdUtil.WrapString("Pre-allocated buffer size for the server (in KB, ignored for http)"))
 
 	key = "log-level"
 	ServeCmd.PersistentFlags().String(key, "info", cmdUtil.WrapString("LogLevel is the level at which logs will be output (debug, info, warn, error)"))
@@ -169,13 +175,15 @@ func run(_ *cobra.Command, _ []string) error {
 
 	// Parse the transport
 	var t transport.IRPCServerTransport
+	workers := viper.GetInt("workers")
+	bufferPoolSize := viper.GetInt("buffer-pool-size") * 1024 // convert to bytes
 	switch viper.GetString("transport") {
 	case "http":
 		t = http.NewHttpServerTransport()
 	case "tcp":
-		t = tcp.NewTCPServerTransport(64 * 1024)
+		t = tcp.NewTCPServerTransport(bufferPoolSize, workers)
 	case "unix":
-		t = unix.NewUnixServerTransport(64 * 1024)
+		t = unix.NewUnixServerTransport(bufferPoolSize, workers)
 	default:
 		return fmt.Errorf("invalid transport %s", viper.GetString("transport"))
 	}

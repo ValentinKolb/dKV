@@ -113,7 +113,7 @@
 //
 //	  // Create store with appropriate timeout
 //	  timeout := time.Duration(5) * time.Second
-//	  store := dstore.NewDistributedStore(nh, shardID, timeout)
+//	  store := dstore.NewDistributedStore(nh, ShardID, timeout)
 //
 //	  // Wait for shard readiness then begin operations
 //	  // ...

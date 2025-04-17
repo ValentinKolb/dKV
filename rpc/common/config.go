@@ -17,7 +17,7 @@ import (
 // These default values are selected according to the RAFT Paper
 const (
 	electionRTTFactor  = 10
-	heartbeatRTTFactor = 2
+	heartbeatRTTFactor = 1
 )
 
 // ToDragonboatConfig converts the ServerConfig to Dragonboat Config
@@ -30,6 +30,7 @@ func (c *ServerConfig) ToDragonboatConfig(shardId uint64) config.Config {
 		CheckQuorum:        true,
 		SnapshotEntries:    c.SnapshotEntries,
 		CompactionOverhead: c.CompactionOverhead,
+		MaxInMemLogSize:    0,
 	}
 }
 
@@ -133,9 +134,9 @@ func (c *ServerConfig) String() string {
 
 		// RAFT parameters
 		addSection("RAFT Parameters")
-		addField("RTT Millisecond", fmt.Sprintf("%d ms", c.RTTMillisecond))
-		addField("Election RTT", fmt.Sprintf("%d", c.RTTMillisecond*electionRTTFactor))
-		addField("Heartbeat RTT", fmt.Sprintf("%d", c.RTTMillisecond*heartbeatRTTFactor))
+		addField("Round Trip Time (ms)", fmt.Sprintf("%d ms", c.RTTMillisecond))
+		addField("Election RTT (ms)", fmt.Sprintf("%d", c.RTTMillisecond*electionRTTFactor))
+		addField("Heartbeat RTT (ms)", fmt.Sprintf("%d", c.RTTMillisecond*heartbeatRTTFactor))
 		addField("Check Quorum", fmt.Sprintf("%t", true))
 		addField("Snapshot Entries", fmt.Sprintf("%d", c.SnapshotEntries))
 		addField("Compaction Overhead", fmt.Sprintf("%d", c.CompactionOverhead))

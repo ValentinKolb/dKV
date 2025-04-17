@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"github.com/ValentinKolb/dKV/lib/db"
 	"github.com/ValentinKolb/dKV/lib/db/engines/maple"
@@ -13,7 +14,15 @@ import (
 	"github.com/lni/dragonboat/v4"
 	"github.com/lni/dragonboat/v4/logger"
 	"github.com/puzpuzpuz/xsync/v3"
+	"net/http"
+	"os"
+	"os/signal"
+	"runtime"
+	"syscall"
+	"testing"
 	"time"
+
+	_ "net/http/pprof"
 )
 
 var Logger = logger.GetLogger("rpc")
@@ -45,16 +54,23 @@ func NewRPCServer(
 	transport transport.IRPCServerTransport,
 	serializer serializer.IRPCSerializer,
 ) rpcServer {
+	// https://github.com/golang/go/issues/17393
+	if runtime.GOOS == "darwin" {
+		signal.Ignore(syscall.Signal(0xd))
+	}
 
 	// Create shards map
 	shardMap := xsync.NewMapOf[uint64, serverShard]()
+
+	Logger.Infof("Created RPC Server")
+	Logger.Infof(config.String())
 
 	// Create the RPC server
 	return rpcServer{
 		config:     config,
 		transport:  transport,
 		serializer: serializer,
-		shards:     *shardMap,
+		shards:     shardMap,
 	}
 }
 
@@ -62,7 +78,7 @@ type rpcServer struct {
 	config     common.ServerConfig
 	transport  transport.IRPCServerTransport
 	serializer serializer.IRPCSerializer
-	shards     xsync.MapOf[uint64, serverShard]
+	shards     *xsync.MapOf[uint64, serverShard]
 }
 
 func (s *rpcServer) registerTransportHandler() {
@@ -107,6 +123,7 @@ func (s *rpcServer) registerTransportHandler() {
 }
 
 func (s *rpcServer) init() error {
+
 	// Init logger
 	common.InitLoggers(s.config)
 
@@ -138,7 +155,7 @@ func (s *rpcServer) init() error {
 	for _, shardConfig := range s.config.Shards {
 
 		// Case local store
-		if shardConfig.Type == common.ShardTypeLocalILockManager {
+		if shardConfig.Type == common.ShardTypeLocalIStore {
 			s.shards.Store(shardConfig.ShardID, serverShard{
 				Store:   lstore.NewLocalStore(dbFactory),
 				Adapter: NewIStoreServerAdapter(),
@@ -146,7 +163,7 @@ func (s *rpcServer) init() error {
 			Logger.Infof("created local store for shard %d", shardConfig.ShardID)
 
 			// Case local lock
-		} else if shardConfig.Type == common.ShardTypeLocalIStore {
+		} else if shardConfig.Type == common.ShardTypeLocalILockManager {
 			s.shards.Store(shardConfig.ShardID, serverShard{
 				Store:   lstore.NewLocalStore(dbFactory),
 				Adapter: NewLockManagerServerAdapter(),
@@ -174,7 +191,6 @@ func (s *rpcServer) init() error {
 				return fmt.Errorf("invalid shard type: %s", shardConfig.Type)
 			}
 
-			// Add the store to the shard in the map
 			s.shards.Store(shardConfig.ShardID, serverShard{
 				Store:   dstore.NewDistributedStore(nodeHost, shardConfig.ShardID, timeout),
 				Adapter: adapter,
@@ -198,4 +214,69 @@ func (s *rpcServer) Serve() error {
 		return err
 	}
 	return s.transport.Listen(s.config)
+}
+
+// temp
+func runTests(nh *dragonboat.NodeHost) {
+
+	// Start the pprof server
+	go func() {
+		Logger.Infof("Starting pprof server on :6060")
+		Logger.Infof("%v", http.ListenAndServe(":6060", nil))
+	}()
+
+	Logger.Infof("sleeping before tests")
+	time.Sleep(3 * time.Second)
+	Logger.Infof("starting tests")
+
+	shardID := uint64(128)
+
+	for {
+
+		readResult := testing.Benchmark(func(b *testing.B) {
+			b.SetParallelism(10)
+			// run test
+			b.RunParallel(func(pb *testing.PB) {
+				counter := 0
+				for pb.Next() {
+
+					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+					_, err := nh.SyncRead(ctx, shardID, []byte{})
+					cancel()
+					if err != nil {
+						fmt.Fprintf(os.Stdout, "failed to read, %v\n", err)
+					}
+
+					counter++
+				}
+			})
+		})
+
+		printResult("read", readResult)
+	}
+}
+
+func printResult(test string, result testing.BenchmarkResult) {
+	nsPerOp := float64(result.T.Nanoseconds()) / float64(result.N)
+	opsPerSec := 1.0 / (nsPerOp / 1e9)
+
+	// Format the time per operation with appropriate units
+	var timePerOpStr string
+	if nsPerOp < 1000 {
+		timePerOpStr = fmt.Sprintf("%.2f ns/op", nsPerOp)
+	} else if nsPerOp < 1000000 {
+		timePerOpStr = fmt.Sprintf("%.2f ns/op (%.2f µs/op)", nsPerOp, nsPerOp/1000)
+	} else if nsPerOp < 1000000000 {
+		timePerOpStr = fmt.Sprintf("%.2f ns/op (%.2f ms/op)", nsPerOp, nsPerOp/1000000)
+	} else {
+		timePerOpStr = fmt.Sprintf("%.2f ns/op (%.2f s/op)", nsPerOp, nsPerOp/1000000000)
+	}
+
+	// Format the operations per second with appropriate units
+	opsPerSecStr := fmt.Sprintf("%.2f ops/sec", opsPerSec)
+
+	// Print the formatted result
+	fmt.Printf("%-20s\t%s\t%s\tAllocs: %d, AllocBytes: %d", test, timePerOpStr, opsPerSecStr, result.AllocsPerOp(), result.AllocedBytesPerOp())
+
+	fmt.Println()
 }

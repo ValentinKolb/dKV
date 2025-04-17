@@ -64,8 +64,6 @@ func SetupRPCClientFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().Int(key, 10, WrapString("The timeout in seconds of the client"))
 	key = "retries"
 	cmd.PersistentFlags().Int(key, 3, WrapString("How many times to retry the request"))
-	key = "shard"
-	cmd.PersistentFlags().Int(key, -1, WrapString("ID of the shard to connect to, default 100 for kv, 200 for lock"))
 }
 
 // InitClientConfig initializes configuration from environment variables

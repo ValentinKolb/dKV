@@ -7,7 +7,6 @@ import (
 	"github.com/ValentinKolb/dKV/lib/lockmgr"
 	"github.com/ValentinKolb/dKV/rpc/client"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -51,8 +50,7 @@ func init() {
 	util.SetupRPCClientFlags(LockCommands)
 
 	// Set default shard ID for lock operations (different from KV default)
-	LockCommands.PersistentFlags().Lookup("shard").DefValue = "200"
-	viper.SetDefault("shard", 200)
+	LockCommands.PersistentFlags().Int("shard", 200, util.WrapString("ID of the shard to connect to"))
 
 	// Add flags specific to acquire
 	acquireCmd.Flags().Uint64Var(&acquireTimeout, "timeout", 30, "Lock timeout in seconds (0 for no timeout)")
@@ -115,7 +113,7 @@ func runAcquire(cmd *cobra.Command, args []string) error {
 }
 
 // runRelease handles the release lock command
-func runRelease(cmd *cobra.Command, args []string) error {
+func runRelease(_ *cobra.Command, args []string) error {
 	key := args[0]
 	ownerIDHex := args[1]
 

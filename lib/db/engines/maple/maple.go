@@ -20,9 +20,9 @@ import (
 
 // Constants for database behavior and structure
 const (
-	magicNum          = "MAPLEDB\x00"           // File format identifier
-	mapleVersion      = 3                       // Database version
-	defaultGCInterval = 1_00 * time.Millisecond // Default interval between GC runs
+	magicNum          = "MAPLEDB\x00"          // File format identifier
+	mapleVersion      = 3                      // Database version
+	defaultGCInterval = 100 * time.Millisecond // Default interval between GC runs
 )
 
 // --------------------------------------------------------------------------
@@ -50,8 +50,8 @@ type DBOptions struct {
 // DefaultOptions returns the default mapleImpl options
 func DefaultOptions() *DBOptions {
 	return &DBOptions{
-		NumShards:  runtime.NumCPU() * 100, // Auto-determine based on CPU count
-		GCInterval: defaultGCInterval,      // Default GC interval
+		NumShards:  runtime.NumCPU(),  // Auto-determine based on CPU count
+		GCInterval: defaultGCInterval, // Default GC interval
 	}
 }
 
@@ -434,6 +434,7 @@ func (maple *mapleImpl) garbageCollector() {
 					select {
 					// case add new entry to gc
 					case event, ok := <-shard.Events.Recv():
+
 						if !ok {
 							return
 						}

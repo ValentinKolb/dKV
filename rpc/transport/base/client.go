@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-var Logger = logger.GetLogger("transport/base")
+var Logger = logger.GetLogger("transport/rpc")
 
 // -----------------------------------------------------------
 // Interface Definitions for dependency injection
@@ -183,6 +183,7 @@ func (t *clientTransport) Send(shardId uint64, req []byte) (resp []byte, err err
 
 		// Lock the connection only for writing
 		connection.connMu.Lock()
+		//Logger.Infof("send %d", requestID)
 		err := writeFrame(connection.conn, shardId, requestID, req)
 		connection.connMu.Unlock()
 
@@ -201,6 +202,7 @@ func (t *clientTransport) Send(shardId uint64, req []byte) (resp []byte, err err
 
 		select {
 		case result := <-respCh:
+			//Logger.Infof("recv %d", requestID)
 			return result.data, result.err
 		case <-timeoutCh:
 			return nil, fmt.Errorf("request timed out")
@@ -258,7 +260,13 @@ func (t *clientTransport) getNextConnection() *clientConnection {
 	}
 
 	// Simple Round Robin algorithm
-	index := atomic.AddUint64(&t.nextConnIndex, 1) % uint64(len(t.connections))
+	var index uint64
+	if len(t.connections) == 1 {
+		// optimize for single connection
+		index = 0
+	} else {
+		index = atomic.AddUint64(&t.nextConnIndex, 1) % uint64(len(t.connections))
+	}
 	return t.connections[index]
 }
 

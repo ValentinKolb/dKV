@@ -5,7 +5,6 @@ import (
 	"github.com/ValentinKolb/dKV/lib/store"
 	"github.com/ValentinKolb/dKV/rpc/client"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -23,6 +22,12 @@ func init() {
 	// Initialize viper
 	cobra.OnInitialize(util.InitClientConfig)
 
+	// Add common RPC flags to the KV command
+	util.SetupRPCClientFlags(KeyValueCommands)
+
+	// Set default shard ID for key value operations (different from Lock default)
+	KeyValueCommands.PersistentFlags().Int("shard", 100, util.WrapString("ID of the shard to connect to"))
+
 	// Add subcommands
 	KeyValueCommands.AddCommand(setCmd)
 	KeyValueCommands.AddCommand(setECmd)
@@ -32,13 +37,6 @@ func init() {
 	KeyValueCommands.AddCommand(delCmd)
 	KeyValueCommands.AddCommand(hasCmd)
 	KeyValueCommands.AddCommand(perfTestCmd)
-
-	// Add common RPC flags to the KV command
-	util.SetupRPCClientFlags(KeyValueCommands)
-
-	// Set default shard ID for key value operations (different from Lock default)
-	KeyValueCommands.PersistentFlags().Lookup("shard").DefValue = "100"
-	viper.SetDefault("shard", 100)
 }
 
 // setupKVClient initializes the RPC store client

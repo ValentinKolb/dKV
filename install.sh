@@ -1,10 +1,12 @@
 #!/bin/bash
 
 # Print banner
-echo "====================================="
+echo "========================"
 echo "dKV Installation Script"
-echo "====================================="
-echo "This script will install dKV from https://github.com/ValentinKolb/dKV"
+echo "========================"
+echo
+echo "This script will install dKV from source."
+echo "See https://github.com/ValentinKolb/dKV"
 echo
 
 # Check if Git is installed
@@ -31,7 +33,7 @@ cleanup() {
 trap cleanup EXIT
 
 # Clone the repository
-echo "Cloning repository from https://github.com/ValentinKolb/dKV..."
+echo "Cloning repository from https://github.com/ValentinKolb/dKV ..."
 if ! git clone https://github.com/ValentinKolb/dKV "$TEMP_DIR"; then
     echo "Error: Failed to clone repository."
     exit 1

@@ -38,11 +38,11 @@ func (c *serverConnector) Listen(config common.ServerConfig) (net.Listener, erro
 // --------------------------------------------------------------------------
 
 // NewTCPDefaultServerTransport creates a new TCP server transport with default buffer size
-func NewTCPDefaultServerTransport() transport.IRPCServerTransport {
-	return NewTCPServerTransport(defaultBufferSize)
+func NewTCPDefaultServerTransport(workers int) transport.IRPCServerTransport {
+	return NewTCPServerTransport(defaultBufferSize, workers)
 }
 
 // NewTCPServerTransport creates a new TCP server transport with specified buffer size
-func NewTCPServerTransport(bufferSize uint64) transport.IRPCServerTransport {
-	return base.NewBaseServerTransport(&serverConnector{}, bufferSize)
+func NewTCPServerTransport(bufferSize, workers int) transport.IRPCServerTransport {
+	return base.NewBaseServerTransport(&serverConnector{}, bufferSize, workers)
 }

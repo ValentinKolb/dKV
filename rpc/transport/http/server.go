@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var Logger = logger.GetLogger("transport/http")
+var Logger = logger.GetLogger("transport/rpc")
 
 func NewHttpServerTransport() transport.IRPCServerTransport {
 	return &httpServerTransport{}
@@ -114,6 +114,6 @@ func loggerMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		// Log the request
 		duration := time.Since(start)
-		Logger.Infof("%s %s => %d took %s", r.Method, r.URL.Path, rw.statusCode, duration)
+		Logger.Debugf("%s %s => %d took %s", r.Method, r.URL.Path, rw.statusCode, duration)
 	})
 }

@@ -57,7 +57,7 @@ func (l *dKVLogger) Panicf(format string, args ...interface{}) {
 // log formats and writes a log message. this internal helper is used by the public methods
 func (l *dKVLogger) log(levelStr string, format string, args ...interface{}) {
 	message := fmt.Sprintf(format, args...)
-	l.logger.Printf("%-5s | %-12s | %s", levelStr, l.name, message)
+	l.logger.Printf("%-5s | %-15s | %s", levelStr, l.name, message)
 }
 
 // --------------------------------------------------------------------------
@@ -117,7 +117,8 @@ func InitLoggers(config ServerConfig) {
 	logger.GetLogger("util").SetLevel(parseLogLevel(config.LogLevel))
 	logger.GetLogger("logdb").SetLevel(parseLogLevel(config.LogLevel))
 
-	// configure custom loggers
-	logger.GetLogger("http").SetLevel(parseLogLevel(config.LogLevel))
-	logger.GetLogger("kvStore").SetLevel(parseLogLevel(config.LogLevel))
+	// configure custom loggers TODO
+	logger.GetLogger("store").SetLevel(parseLogLevel(config.LogLevel))
+	logger.GetLogger("transport/rpc").SetLevel(parseLogLevel(config.LogLevel))
+	logger.GetLogger("rpc").SetLevel(parseLogLevel(config.LogLevel))
 }

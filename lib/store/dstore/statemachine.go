@@ -16,18 +16,20 @@ import (
 
 // KVStateMachine is a state machine implementation for Dragonboat RAFT
 type KVStateMachine struct {
-	replicaID uint64
-	shardID   uint64
-	database  db.KVDB // the actual dataStorage
+	ReplicaID uint64
+	ShardID   uint64
+	database  db.KVDB
 }
 
 // CreateStateMaschineFactory returns a function that can be used by dragenboat to create a new standmaschine for a node host
 // The factory pattern is used to enable the caller to pass an interchangeable dbFactory
 func CreateStateMaschineFactory(dbFactory store.DBFactory) func(shardID uint64, replicaID uint64) sm.IConcurrentStateMachine {
 	return func(shardID uint64, replicaID uint64) sm.IConcurrentStateMachine {
+		fmt.Println("CreateStateMaschineFactory")
+
 		return &KVStateMachine{
-			replicaID: replicaID,
-			shardID:   shardID,
+			ReplicaID: replicaID,
+			ShardID:   shardID,
 			database:  dbFactory(),
 		}
 	}
@@ -35,7 +37,6 @@ func CreateStateMaschineFactory(dbFactory store.DBFactory) func(shardID uint64, 
 
 // Lookup handles read-only queries by mapping each Query operation to the corresponding KVDB method.
 func (fsm *KVStateMachine) Lookup(itf interface{}) (interface{}, error) {
-
 	// try to parse Query into Query struct
 	q, ok := itf.(internal.Query)
 	if !ok {
@@ -68,7 +69,6 @@ func (fsm *KVStateMachine) Lookup(itf interface{}) (interface{}, error) {
 // Update handles write commands on the KVDB instance
 // All write operations are serialized into []byte and are accessible via the entries struct
 func (fsm *KVStateMachine) Update(entries []sm.Entry) ([]sm.Entry, error) {
-
 	// Nothing to do
 	if len(entries) == 0 {
 		return entries, nil

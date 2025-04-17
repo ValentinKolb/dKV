@@ -13,7 +13,6 @@
 package util
 
 import (
-	"fmt"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -34,6 +33,10 @@ type LockFreeMPSC[T interface{}] struct {
 	out      chan *T
 	consumer sync.WaitGroup
 	closed   atomic.Bool // atomic flag
+
+	// Condition variable for efficient waiting
+	mu   sync.Mutex
+	cond *sync.Cond
 }
 
 // NewLockFreeMPSC creates a new lockmgr-free multi-producer single-consumer queue
@@ -44,6 +47,9 @@ func NewLockFreeMPSC[T interface{}]() *LockFreeMPSC[T] {
 	q := &LockFreeMPSC[T]{
 		out: make(chan *T),
 	}
+
+	// Initialize condition variable
+	q.cond = sync.NewCond(&q.mu)
 
 	// Set the initial head and tail to the sentinel node
 	q.head.Store(sentinel)
@@ -62,7 +68,6 @@ func NewLockFreeMPSC[T interface{}]() *LockFreeMPSC[T] {
 func (q *LockFreeMPSC[T]) Push(value *T) bool {
 
 	if value == nil {
-		fmt.Println("value is nil")
 		return false
 	}
 
@@ -89,6 +94,10 @@ func (q *LockFreeMPSC[T]) Push(value *T) bool {
 				 but that's okay - tail will still be updated eventually
 				*/
 				q.tail.CompareAndSwap(tailNode, newNode)
+
+				// Signal the consumer that new data is available
+				q.cond.Signal()
+
 				return true
 			}
 		} else {
@@ -119,25 +128,48 @@ func (q *LockFreeMPSC[T]) consume() {
 	defer close(q.out)
 
 	for {
-		head := q.head.Load()
-		next := head.next.Load()
+		// Process all available items in the queue
+		hasItems := false
 
-		if next != nil {
+		// Try to process items
+		for {
+			head := q.head.Load()
+			next := head.next.Load()
+
+			if next == nil {
+				break // No more items available
+			}
+
+			hasItems = true
+
+			// Capture value before updating pointers
 			value := next.value
-
-			// help go gc
-			next.value = nil
 
 			// move head pointer (free up memory)
 			q.head.Store(next)
 
 			// Send the value to the consumer
 			q.out <- value
-		} else { // case no more nodes available
-			if q.closed.Load() {
-				return
+
+			// help go gc - safe to clear after sending
+			next.value = nil
+		}
+
+		// Exit if closed and no more items
+		if !hasItems && q.closed.Load() {
+			return
+		}
+
+		// If no items were processed, wait for signal
+		if !hasItems {
+			q.mu.Lock()
+			// Double-check condition after acquiring lock
+			head := q.head.Load()
+			if head.next.Load() == nil && !q.closed.Load() {
+				// Wait for signal (releases lock while waiting)
+				q.cond.Wait()
 			}
-			runtime.Gosched() // yield
+			q.mu.Unlock()
 		}
 	}
 }
@@ -152,6 +184,9 @@ func (q *LockFreeMPSC[T]) Recv() <-chan *T {
 // Any items already in the queue will still be delivered to the consumer.
 func (q *LockFreeMPSC[T]) Close() {
 	q.closed.Store(true)
+
+	// Wake up the consumer if it's waiting
+	q.cond.Signal()
 }
 
 // IsClosed returns true if the queue is closed.

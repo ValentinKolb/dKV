@@ -39,24 +39,25 @@ specific benchmarks will be added in future commits.
 
 ## Architecture Overview
 
-dKV follows a layered architecture with clean interfaces between components:
+dKV follows a nested architecture with clean interfaces between components:
 
 ```
-+------------------------+
-| RPC Layer              |     Remote Procedure Calls
-+------------------------+
-     ↑ ↓           ↑
-+-----------+      |
-| Lock Mgr  |      |           Optional mutex functionality
-+-----------+      |
-     ↑ ↓           ↓
-+------------------------+
-| Consistency Layer      |     Logical clock, optional multi-node replication with RAFT
-+------------------------+
-           ↑ ↓
-+------------------------+
-| Data Layer             |     Data storage and persistence
-+------------------------+
++--------------------------------------------------+         +-----------------+ 
+|  RPC Shell                                       |   ←-→   | CLI Client      |
+|                                                  |         +-----------------+
+|  +--------------------------------------------+  |
+|  |  Lock Manager (optional)                   |  |         +-----------------+ 
+|  |                                            |  |   ←-→   | Golang Client   |
+|  |  +--------------------------------------+  |  |         +-----------------+ 
+|  |  |  Consistency Component (RAFT)        |  |  |          
+|  |  |                                      |  |  |          ↑  Load Balancing
+|  |  |  +--------------------------------+  |  |  |          ↓  & High Avail.
+|  |  |  |  Data Core (Maple)             |  |  |  |          
+|  |  |  |                                |  |  |  |         +-----------------+
+|  |  |  +--------------------------------+  |  |  |   ←-→   | Other dkv Nodes |
+|  |  +--------------------------------------+  |  |         #       ↑ ↓       # 
+|  +--------------------------------------------+  |   ←-→   | Other dkv Nodes |
++--------------------------------------------------+         +-----------------+ 
 ```
 
 ### Consistency Guarantees
@@ -70,23 +71,24 @@ Local stores (`lstore`) offer the same guarantees but only on a single node.
 The lock manager provides distributed mutual exclusion when using a distributed store. Locks prevent concurrent access
 to the same resource across the cluster, with ownership verification ensuring only the lock holder can release it.
 
-### Data Layer (`db`)
-The foundation of dKV is a high-performance key-value database implementing the `KVDB` interface. The Maple engine provides optimized storage with multi-level sharding, lock-free data structures, and efficient garbage collection.
+### Data Core (`db`)
+At the center of dKV is a high-performance key-value database implementing the `KVDB` interface. 
+The Maple reference implementation provides optimized storage with multi-level sharding, lock-free data structures, and efficient garbage collection.
 
-### Consistency Layer (`store`)
-Built on top of the data layer, the consistency layer provides linearizable operations through the `IStore` interface with two implementations:
+### Consistency Component (`store`)
+Encapsulating the data core, the consistency component provides linearizable operations through the `IStore` interface with two implementations:
 - `dstore`: Distributed store using RAFT consensus
 - `lstore`: Local store with high performance, not replicated
 
-### Locking Layer (`lockmgr`)
-An optional layer providing distributed mutex functionality using the `ILockManager` interface, built on top of any `IStore` implementation.
+### Lock Manager (`lockmgr`)
+An optional wrapper component providing distributed mutex functionality using the `ILockManager` interface, built on top of any `IStore` implementation.
 
-### RPC Layer
-The topmost layer enables remote communication with interchangeable transports, serialization formats, and adapters:
+### RPC Shell
+The outermost component enables remote communication with interchangeable transports, serialization formats, and adapters:
 
 ```
 +------------------------+
-| Client                 |    Go Code / Cli
+| Client                 |    Go Client / Cli
 +------------------------+
             ↑
 +------------------------+
@@ -258,7 +260,7 @@ For most use cases, simply using the RPC server is the recommended approach for 
 
 #### Creating an RPC Client
 
-Client applications can communicate with dKV servers using the RPC layer:
+Client applications can communicate with dKV servers using the RPC shell:
 
 ```go
 package main
