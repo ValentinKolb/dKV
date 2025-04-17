@@ -6,7 +6,6 @@
 
 # Golang
 go.work
-go.sum
 
 # Project specific
 .env
