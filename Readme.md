@@ -55,7 +55,7 @@ dkv lock --help # for lock operations
 All command line flags can be set via environment variables by prefixing them with `DKV_`:
 
 ```env
-# --timeout=5 will become_
+# --timeout=5 will become:
 DKV_TIMEOUT=5
 
 # --log-level=debug will become:
@@ -117,29 +117,29 @@ An optional wrapper component providing distributed mutex functionality using th
 The outermost component enables remote communication with interchangeable transports, serialization formats, and adapters:
 
 ```
-+------------------------+
-| Client                 |    Go Client / Cli
-+------------------------+
-            ↑
-+------------------------+
-| IStore / ILockManager  |
-+------------------------+     
-| (De-) Serialization    |     RPC Client
-+------------------------+
-| Client Transport       |
-+------------------------+
-           ↑ ↓                 Network
-+------------------------+
-| Server Transport       |
-+------------------------+
-| (De-) Serialization    |     RPC Server
-+------------------------+
-| Server Adapters        |
-+------------------------+
-            ↓
-+------------------------+
-| IStore / ILockManager  |     RAFT Cluster
-+------------------------+
++--------------------------------+
+|           Client               |   Go Client / Cli
++--------------------------------+
+|               ↑                |
+|   +------------------------+   |
+|   | IStore / ILockManager  |   |
+|   +------------------------+   | 
+|   | (De-) Serialization    |   |   RPC Client
+|   +------------------------+   |
+|   | Client Transport       |   |
+|   +------------------------+   |
+|              ↑ ↓               |   Network
+|   +------------------------+   |
+|   | Server Transport       |   |
+|   +------------------------+   |
+|   | (De-) Serialization    |   |   RPC Server
+|   +------------------------+   |
+|   | Server Adapters        |   |
+|   +------------------------+   |
+|               ↓                |
++--------------------------------+
+|    IStore / ILockManager       |   RAFT Cluster
++--------------------------------+
 ```
 
 ## Detailed Usage
