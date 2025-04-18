@@ -14,14 +14,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o dkv main.go
 # Stage 2: Create minimal runtime image
 FROM alpine:latest
 
-RUN adduser -D -h /app appuser # Non-root user to run the application
 WORKDIR /app
 
 COPY --from=builder /app/dkv /app/dkv
-
-RUN chown -R appuser:appuser /app
-
-USER appuser
 
 # Set sensible defaults
 ENV DKV_SNAPSHOT_ENTRIES=100000

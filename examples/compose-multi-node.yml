@@ -9,6 +9,7 @@ x-dkv-common-env: &dkv-common-env
 
   # DKV specific configuration
   # General settings
+  DKV_SHARDS: "100=dstore,200=lockmgr(dstore)" # Shard configuration for the DKV server
   DKV_LOG_LEVEL: "info"    # Log verbosity level (debug, info, warn, error)
   DKV_TIMEOUT: 15          # Global timeout in seconds for various operations
   
@@ -100,8 +101,5 @@ networks:
 
 volumes:
   dkv-data-1:             # Persistent storage volume for node 1
-    driver: local
   dkv-data-2:             # Persistent storage volume for node 2
-    driver: local
   dkv-data-3:             # Persistent storage volume for node 3
-    driver: local
