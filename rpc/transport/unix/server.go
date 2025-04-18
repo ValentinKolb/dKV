@@ -9,10 +9,6 @@ import (
 	"os"
 )
 
-const (
-	defaultBufferSize = 64 * 1024 // 64 KB
-)
-
 // serverConnector implements the IServerConnector interface for Unix sockets
 type serverConnector struct{}
 
@@ -42,7 +38,7 @@ func (c *serverConnector) Listen(config common.ServerConfig) (net.Listener, erro
 }
 
 // UpgradeConnection applies performance optimizations to a Unix socket connection
-func (c *serverConnector) UpgradeConnection(conn net.Conn, config common.ServerConfig) error {
+func (c *serverConnector) UpgradeConnection(conn net.Conn, _ common.ServerConfig) error {
 	unixConn, ok := conn.(*net.UnixConn)
 	if !ok {
 		return nil // Not a Unix connection, nothing to upgrade

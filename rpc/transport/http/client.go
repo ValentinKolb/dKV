@@ -40,7 +40,7 @@ func (transport *httpClientTransport) Connect(config common.ClientConfig) error 
 	}
 
 	// Create client with default transport
-	client := &http.Client{
+	c := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConns:        100,
 			MaxIdleConnsPerHost: 10,
@@ -49,7 +49,7 @@ func (transport *httpClientTransport) Connect(config common.ClientConfig) error 
 	}
 
 	// Set the client and server URLs
-	transport.client = client
+	transport.client = c
 	transport.serverURLs = parsedURLs
 	transport.counter = 0
 	transport.retryCount = config.Transport.RetryCount

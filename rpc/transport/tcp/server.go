@@ -9,10 +9,6 @@ import (
 	"time"
 )
 
-const (
-	defaultBufferSize = 512 * 1024 // 512 KB
-)
-
 // serverConnector implements the IServerConnector interface for TCPConf sockets
 type serverConnector struct{}
 
