@@ -14,10 +14,6 @@ leveraging RAFT consensus for linearizability and fault tolerance.*
 
 ## Quick Start
 
-### Linux
-
-## Quick Start
-
 ### Installation
 
 The recommended way to install dKV is using the installation script:
@@ -444,6 +440,6 @@ Distributed under the MIT License. See `LICENSE` for details.
 
 ## Acknowledgments
 
-- This library is part of a Bachelor Thesis at the University of Ulm.
+- This library is part of my Bachelor Thesis at the University of Ulm.
 - [Dragonboat](https://github.com/lni/dragonboat): RAFT consensus implementation.
 - [xsync](https://github.com/puzpuzpuz/xsync): High-performance concurrent data structures for Go.
