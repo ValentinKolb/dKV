@@ -75,13 +75,13 @@ func SetupRPCClientFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().Int(key, 512, WrapString("The size of the read buffer for the transport (in KB, ignored for http)"))
 
 	key = "transport-tcp-nodelay"
-	cmd.PersistentFlags().Bool(key, true, WrapString("Whether to enable TCP_NODELAY for the transport (only for TCP)"))
+	cmd.PersistentFlags().Bool(key, true, WrapString("Whether to enable TCP_NODELAY for the transport (only for TCPConf)"))
 
 	key = "transport-tcp-keepalive"
-	cmd.PersistentFlags().Int(key, 0, WrapString("The keepalive interval for the transport (in seconds, only for TCP)"))
+	cmd.PersistentFlags().Int(key, 0, WrapString("The keepalive interval for the transport (in seconds, only for TCPConf)"))
 
 	key = "transport-tcp-linger"
-	cmd.PersistentFlags().Int(key, 0, WrapString("The linger time for the transport (in seconds, only for TCP)"))
+	cmd.PersistentFlags().Int(key, 0, WrapString("The linger time for the transport (in seconds, only for TCPConf)"))
 }
 
 // InitClientConfig initializes configuration from environment variables
@@ -104,11 +104,11 @@ func GetClientConfig() *common.ClientConfig {
 			RetryCount:             viper.GetInt("transport-retries"),
 			Endpoints:              strings.Split(viper.GetString("transport-endpoints"), ","),
 			ConnectionsPerEndpoint: viper.GetInt("transport-conn-per-endpoint"),
-			SocketTransportConfig: common.SocketTransportConfig{
+			SocketConf: common.SocketConf{
 				WriteBufferSize: viper.GetInt("transport-write-buffer") * 1024,
 				ReadBufferSize:  viper.GetInt("transport-read-buffer") * 1024,
 			},
-			TCPTransportConfig: common.TCPTransportConfig{
+			TCPConf: common.TCPConf{
 				TCPKeepAliveSec: viper.GetInt("transport-tcp-keepalive"),
 				TCPLingerSec:    viper.GetInt("transport-tcp-linger"),
 				TCPNoDelay:      viper.GetBool("transport-tcp-nodelay"),

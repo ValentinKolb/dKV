@@ -14,30 +14,61 @@ leveraging RAFT consensus for linearizability and fault tolerance.*
 
 ## Quick Start
 
-Install the command line tool:
+### Linux
+
+## Quick Start
+
+### Installation
+
+The recommended way to install dKV is using the installation script:
 
 ```bash
-# This will compile the dKV CLI from source and install it in your $PATH - a precompiled binary will be available in the future
 curl -s https://raw.githubusercontent.com/ValentinKolb/dKV/refs/heads/main/install.sh | bash
-
-# Use it (requires a server running - see below)
-dkv kv set --shard=100 foo bar
-dkv kv get --shard=100 foo 
 ```
+
+The script automatically detects your operating system and architecture, and installs the appropriate binary.
+
+#### Installation Options
+
+```bash
+# Install to a custom location
+curl -s https://raw.githubusercontent.com/ValentinKolb/dKV/refs/heads/main/install.sh | bash -s -- --path=/your/custom/path
+
+# Install from source instead of using pre-compiled binaries
+curl -s https://raw.githubusercontent.com/ValentinKolb/dKV/refs/heads/main/install.sh | bash -s -- --source
+
+# Show help and all available options
+curl -s https://raw.githubusercontent.com/ValentinKolb/dKV/refs/heads/main/install.sh | bash -s -- --help
+```
+
+### Usage
+
+Once installed, you can use dKV (requires a server running):
+
+```bash
+dkv kv set --shard=100 foo bar
+dkv kv get --shard=100 foo
+```
+
+#### Server
 
 It is recommended to use docker to deploy the server. The following command starts a local single node server:
 
 ```bash
 export DKV_TIMEOUT=10 # Set config values for the server as env vars 
 
-docker run -p 8080:8080 ghcr.io/valentinkolb/dkv:latest --workers=100 # <- and/or set dkv config flags here
+docker run -p 8080:8080 ghcr.io/valentinkolb/dkv:latest --transport-workers=100 # <- set dkv config flags here
 ```
-For deployments an example [docker compose](https://github.com/ValentinKolb/dKV/blob/main/compose.yml) file is provided.
+
+Multiple example docker compose files are provided:
+
+- [Single Node](https://github.com/ValentinKolb/dKV/blob/main/examples/compose-single-node.yml)
+- [Cluster](https://github.com/ValentinKolb/dKV/blob/main/examples/compose-multi-node.yml)
 
 Alternatively you can use the CLI to start a server:
 
 ```bash
-dkv serve --timeout="10" --workers=100
+dkv serve --timeout="10" --transport-workers=100
 ```
 
 ## Configuration
@@ -150,20 +181,24 @@ The server supports both local and distributed instances at the same time, allow
 
 ```bash
 # Start a three-node cluster (run for IDs 1, 2, and 3)
-export ID=1
+ID=1 # Change this for each node
 dkv serve \
   --shards="100:lstore,200:dstore,300:lockmgr(dstore)" \
   --replica-id "node-${ID}" \
   --cluster-members="node-1=localhost:63001,node-2=localhost:63002,node-3=localhost:63003" \
-  --endpoint ":808${ID}" \
   --data-dir="/tmp/data/node-${ID}" \
-  --transport="tcp" \
   --serializer="binary" \
+  --transport="tcp" \
+  --transport-endpoint ":808${ID}" \
+  --transport-workers=100 \
+  --transport-tcp-nodelay \
+  --transport-tcp-keepalive=1 \
+  --transport-tcp-linger=10 \
   --log-level="info" \
   --timeout=5
 ```
 
-This creates a cluster with three nodes, each running:
+This creates a cluster with three nodes (if called three time for different ID's), each running:
 - Shard `100`: Local store (not replicated)
 - Shard `200`: Distributed store (replicated across all nodes)
 - Shard `300`: Distributed lock manager (using the distributed store)
@@ -191,13 +226,13 @@ Distributed operations leverage RAFT consensus to provide linearizable consisten
 
 ```bash
 # Set value in distributed store
-dkv kv set --shard=200 --endpoints="localhost:8081" foo bar
+dkv kv set --shard=200 --transport-endpoints="localhost:8081" foo bar
 
 # Load balancing across multiple nodes
-dkv kv set --shard=200 --endpoints="localhost:8081,localhost:8082,localhost:8083" foo bar
+dkv kv set --shard=200 --transport-endpoints="localhost:8081,localhost:8082,localhost:8083" foo bar
 
 # Reading from any node returns the same data (replicated store)
-dkv kv get --shard=200 --endpoints="localhost:8082" foo  # Result: found=true
+dkv kv get --shard=200 --transport-endpoints="localhost:8082" foo  # Result: found=true
 ```
 
 The local and distributed store supports all operations defined in the `IStore` interface:
@@ -222,10 +257,10 @@ This cluster-wide protection is built on the RAFT consensus protocol's lineariza
 
 ```bash
 # Acquire a distributed lock (will be exclusively held across the entire cluster)
-dkv lock acquire --shard=300 --endpoints="localhost:8081" foo  # Result: acquired=true, ownerId=ID_VALUE
+dkv lock acquire --shard=300 --transport-endpoints="localhost:8081" foo  # Result: acquired=true, ownerId=ID_VALUE
 
 # Release the lock (making it available to any other process in the cluster)
-dkv lock release --shard=300 --endpoints="localhost:8081" foo ID_VALUE  # Result: released=true
+dkv lock release --shard=300 --transport-endpoints="localhost:8081" foo ID_VALUE  # Result: released=true
 ```
 
 #### Performance Testing
@@ -312,6 +347,24 @@ func main() {
 		ConnectionsPerEndpoint: 5,
 	}
 
+
+	config :=  common.ClientConfig{
+		TimeoutSecond: viper.GetInt("timeout"),
+		Transport: common.ClientTransportConfig{
+			RetryCount:             2,
+			Endpoints:              []string{"localhost:8080"},
+			SocketConf: common.SocketConf{
+				WriteBufferSize: 512 * 1024,
+				ReadBufferSize:  5125 * 1024,
+				// ...
+			},
+			TCPConf: common.TCPConf{
+				TCPNoDelay:      true,
+				// ...
+			},
+		},
+	}
+
 	// Create serializer and transport
 	t := tcp.NewTCPClientTransport()
 	s := serializer.NewBinarySerializer()
@@ -353,13 +406,22 @@ import (
 func main() {
     // Create server configuration
     config := common.ServerConfig{
+		TimeoutSecond: 5,
+		LogLevel: "info",
         Shards: []common.ServerShard{
             {ShardID: 100, Type: common.ShardTypeLocalIStore},
             {ShardID: 200, Type: common.ShardTypeLocalILockManager},
         },
-        Endpoint: "0.0.0.0:8080",
-        TimeoutSecond: 5,
-        LogLevel: "info",
+		Transport: common.ServerTransportConfig{
+			TCPConf: common.TCPConf{
+				// ...
+			},
+			SocketConf: common.SocketConf{
+				// ...
+			},
+			WorkersPerConn: 100,
+			Endpoint:       ":8080",
+		},
     }
     
     // Create and start the server

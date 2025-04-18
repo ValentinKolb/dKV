@@ -15,6 +15,6 @@
 // Performance Characteristics:
 //
 //   - Default buffer size: 64 KB, optimized for local communication patterns
-//   - Reduced overhead: Eliminates TCP/IP stack processing for better performance
+//   - Reduced overhead: Eliminates TCPConf/IP stack processing for better performance
 //   - Lower latency: Direct kernel-mediated IPC avoids network subsystem overhead
 package unix

@@ -1,6 +1,6 @@
-// Package tcp implements TCP socket-based transport for the distributed key-value store's
+// Package tcp implements TCPConf socket-based transport for the distributed key-value store's
 // RPC system. It provides concrete implementations of the base package's connector
-// interfaces optimized for TCP connections.
+// interfaces optimized for TCPConf connections.
 //
 // This package builds on the base package's transport functionality, inheriting its
 // performance optimizations including connection pooling, buffer reuse, and request
@@ -9,9 +9,9 @@
 //
 // Key Components:
 //
-//   - clientConnector: TCP-specific implementation of base.IClientConnector
+//   - clientConnector: TCPConf-specific implementation of base.IClientConnector
 //
-//   - serverConnector: TCP-specific implementation of base.IServerConnector
+//   - serverConnector: TCPConf-specific implementation of base.IServerConnector
 //
 // The default server buffer size is set to 512 KB, which provides good performance
 // for typical workloads, but can be customized for specific use cases.

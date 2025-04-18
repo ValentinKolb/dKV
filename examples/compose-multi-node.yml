@@ -1,0 +1,107 @@
+version: '3.8'
+
+# Common env variables for all nodes
+x-dkv-common-env: &dkv-common-env
+  # Go runtime configuration
+  GOGC: 100                # Garbage collection aggressiveness - lower values use more memory but less CPU
+  GOMEMLIMIT: "2GiB"       # Memory limit for Go runtime
+  GOMAXPROCS: 4            # Number of OS threads that can execute Go code simultaneously
+
+  # DKV specific configuration
+  # General settings
+  DKV_LOG_LEVEL: "info"    # Log verbosity level (debug, info, warn, error)
+  DKV_TIMEOUT: 15          # Global timeout in seconds for various operations
+  
+  # RAFT consensus configuration
+  DKV_RTT_MILLISECOND: 100            # Round-trip time estimate in milliseconds
+  DKV_SNAPSHOT_ENTRIES: 5000          # Number of log entries between snapshots
+  DKV_COMPACTION_OVERHEAD: 2500       # Additional entries to keep after compaction
+  
+  # Cluster configuration - using internal hostnames and port (63001)
+  DKV_CLUSTER_MEMBERS: "node-1=dkv-node-1:63001,node-2=dkv-node-2:63001,node-3=dkv-node-3:63001"
+  
+  # RPC Server configuration  
+  DKV_SERIALIZER: "binary"            # Serialization format for RPC messages
+  DKV_TRANSPORT: "tcp"                # Transport protocol for RPC
+  DKV_TRANSPORT_WORKERS: 10           # Number of workers per connection
+  DKV_TRANSPORT_WRITE_BUFFER: 512     # Size of the write buffer in KB
+  DKV_TRANSPORT_READ_BUFFER: 512      # Size of the read buffer in KB
+  DKV_TRANSPORT_TCP_NODELAY: true     # Whether to enable TCP_NODELAY (disable Nagle's algorithm)
+  DKV_TRANSPORT_TCP_KEEP_ALIVE: 60    # Keep-alive interval in seconds
+  DKV_TRANSPORT_TCP_LINGER: 10        # Maximum idle time in seconds
+
+# Define common deployment resources as YAML anchors
+x-dkv-resources: &dkv-resources
+  limits:
+    cpus: '4'              # Maximum CPU usage
+    memory: 2G             # Maximum memory usage
+  reservations:
+    cpus: '1'              # Minimum guaranteed CPU
+    memory: 2G             # Minimum guaranteed memory
+
+services:
+  dkv-node-1:
+    image: ghcr.io/valentinkolb/dkv:latest
+    container_name: dkv-node-1
+    restart: unless-stopped
+    ports:
+      - "8081:8080"             # Expose the RPC server on port 8081
+    environment:
+      <<: *dkv-common-env       # Include all common environment variables
+      DKV_REPLICA_ID: "node-1"  # Unique identifier for this node
+    volumes:
+      - dkv-data-1:/app/data    # Persistent storage for node 1
+    networks:
+      - dkv-network             # External network for client communication
+      - raft-network            # Internal network for Raft consensus
+    deploy:
+      resources: *dkv-resources  # Apply the common resource constraints
+
+  dkv-node-2:
+    image: ghcr.io/valentinkolb/dkv:latest
+    container_name: dkv-node-2
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    environment:
+      <<: *dkv-common-env
+      DKV_REPLICA_ID: "node-2"
+    volumes:
+      - dkv-data-2:/app/data
+    networks:
+      - dkv-network
+      - raft-network
+    deploy:
+      resources: *dkv-resources
+
+  dkv-node-3:
+    image: ghcr.io/valentinkolb/dkv:latest
+    container_name: dkv-node-3
+    restart: unless-stopped
+    ports:
+      - "8083:8080"
+    environment:
+      <<: *dkv-common-env
+      DKV_REPLICA_ID: "node-3"
+    volumes:
+      - dkv-data-3:/app/data
+    networks:
+      - dkv-network
+      - raft-network
+    deploy:
+      resources: *dkv-resources
+
+networks:
+  dkv-network:
+    driver: bridge        # Standard bridge network for rpc communications
+  raft-network:
+    driver: bridge
+    internal: true        # Internal network that's not accessible from the host
+
+volumes:
+  dkv-data-1:             # Persistent storage volume for node 1
+    driver: local
+  dkv-data-2:             # Persistent storage volume for node 2
+    driver: local
+  dkv-data-3:             # Persistent storage volume for node 3
+    driver: local

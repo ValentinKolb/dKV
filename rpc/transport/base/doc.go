@@ -1,6 +1,6 @@
 // Package base provides a foundation for transport layers in the distributed key-value store,
 // implementing core functionality for RPC communication independent of the specific
-// network protocol (TCP, Unix sockets, etc.). It serves as a base layer that can be
+// network protocol (TCPConf, Unix sockets, etc.). It serves as a base layer that can be
 // extended with protocol-specific connectors.
 //
 // The package focuses on:

@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// clientConnector implements the IClientConnector interface for TCP sockets
+// clientConnector implements the IClientConnector interface for TCPConf sockets
 type clientConnector struct{}
 
 // --------------------------------------------------------------------------
@@ -23,15 +23,15 @@ func (c *clientConnector) Connect(endpoint string) (net.Conn, error) {
 	return net.Dial("tcp", endpoint)
 }
 
-// UpgradeConnection applies performance optimizations to a TCP connection
-// using configuration values from TCPTransportConfig and SocketTransportConfig
+// UpgradeConnection applies performance optimizations to a TCPConf connection
+// using configuration values from TCPConf and SocketConf
 func (c *clientConnector) UpgradeConnection(conn net.Conn, config common.ClientConfig) error {
 	tcpConn, ok := conn.(*net.TCPConn)
 	if !ok {
-		return nil // Not a TCP connection, nothing to upgrade
+		return nil // Not a TCPConf connection, nothing to upgrade
 	}
 
-	// Apply TCP-specific settings
+	// Apply TCPConf-specific settings
 	// Disable Nagle's algorithm (TCPNoDelay) if configured
 	if err := tcpConn.SetNoDelay(config.Transport.TCPNoDelay); err != nil {
 		return err
@@ -51,7 +51,7 @@ func (c *clientConnector) UpgradeConnection(conn net.Conn, config common.ClientC
 		}
 	}
 
-	// Enable TCP keep-alive if configured
+	// Enable TCPConf keep-alive if configured
 	if config.Transport.TCPKeepAliveSec > 0 {
 		if err := tcpConn.SetKeepAlive(true); err != nil {
 			return err
@@ -64,7 +64,7 @@ func (c *clientConnector) UpgradeConnection(conn net.Conn, config common.ClientC
 		}
 	}
 
-	// Set TCP linger option if configured
+	// Set TCPConf linger option if configured
 	if config.Transport.TCPLingerSec >= 0 {
 		if err := tcpConn.SetLinger(config.Transport.TCPLingerSec); err != nil {
 			return err
@@ -78,7 +78,7 @@ func (c *clientConnector) UpgradeConnection(conn net.Conn, config common.ClientC
 // Client Transport Factory Method
 // --------------------------------------------------------------------------
 
-// NewTCPClientTransport creates a new TCP client transport
+// NewTCPClientTransport creates a new TCPConf client transport
 func NewTCPClientTransport() transport.IRPCClientTransport {
 	return base.NewBaseClientTransport(&clientConnector{})
 }

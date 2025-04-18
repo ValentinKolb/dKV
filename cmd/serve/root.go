@@ -74,13 +74,13 @@ func init() {
 	ServeCmd.PersistentFlags().Int(key, 512, cmdUtil.WrapString("The size of the read buffer for the transport (in KB, ignored for http)"))
 
 	key = "transport-tcp-nodelay"
-	ServeCmd.PersistentFlags().Bool(key, true, cmdUtil.WrapString("Whether to enable TCP_NODELAY for the transport (only for TCP)"))
+	ServeCmd.PersistentFlags().Bool(key, true, cmdUtil.WrapString("Whether to enable TCP_NODELAY for the transport (only for TCPConf)"))
 
 	key = "transport-tcp-keepalive"
-	ServeCmd.PersistentFlags().Int(key, 0, cmdUtil.WrapString("The keepalive interval for the transport (in seconds, only for TCP)"))
+	ServeCmd.PersistentFlags().Int(key, 60, cmdUtil.WrapString("The keepalive interval for the transport (in seconds, only for TCPConf)"))
 
 	key = "transport-tcp-linger"
-	ServeCmd.PersistentFlags().Int(key, 0, cmdUtil.WrapString("The linger time for the transport (in seconds, only for TCP)"))
+	ServeCmd.PersistentFlags().Int(key, 10, cmdUtil.WrapString("The linger time for the transport (in seconds, only for TCPConf)"))
 
 	key = "transport-workers"
 	ServeCmd.PersistentFlags().Int(key, 10, cmdUtil.WrapString("How many worker the server should use per connection (ignored for http)"))
@@ -95,12 +95,12 @@ func processConfig(cmd *cobra.Command, _ []string) error {
 
 	// read transport configuration
 	transportSettings := common.ServerTransportConfig{
-		TCPTransportConfig: common.TCPTransportConfig{
+		TCPConf: common.TCPConf{
 			TCPKeepAliveSec: viper.GetInt("transport-tcp-keepalive"),
 			TCPLingerSec:    viper.GetInt("transport-tcp-linger"),
 			TCPNoDelay:      viper.GetBool("transport-tcp-nodelay"),
 		},
-		SocketTransportConfig: common.SocketTransportConfig{
+		SocketConf: common.SocketConf{
 			WriteBufferSize: viper.GetInt("transport-write-buffer") * 1024,
 			ReadBufferSize:  viper.GetInt("transport-read-buffer") * 1024,
 		},

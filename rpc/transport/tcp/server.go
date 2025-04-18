@@ -13,7 +13,7 @@ const (
 	defaultBufferSize = 512 * 1024 // 512 KB
 )
 
-// serverConnector implements the IServerConnector interface for TCP sockets
+// serverConnector implements the IServerConnector interface for TCPConf sockets
 type serverConnector struct{}
 
 // --------------------------------------------------------------------------
@@ -25,24 +25,24 @@ func (c *serverConnector) GetName() string {
 }
 
 func (c *serverConnector) Listen(config common.ServerConfig) (net.Listener, error) {
-	// Create TCP socket listener
+	// Create TCPConf socket listener
 	listener, err := net.Listen("tcp", config.Transport.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create TCP socket: %v", err)
+		return nil, fmt.Errorf("failed to create TCPConf socket: %v", err)
 	}
 
 	return listener, nil
 }
 
-// UpgradeConnection applies performance optimizations to a TCP connection
-// using configuration values from TCPTransportConfig and SocketTransportConfig
+// UpgradeConnection applies performance optimizations to a TCPConf connection
+// using configuration values from TCPConf and SocketConf
 func (c *serverConnector) UpgradeConnection(conn net.Conn, config common.ServerConfig) error {
 	tcpConn, ok := conn.(*net.TCPConn)
 	if !ok {
-		return nil // Not a TCP connection, nothing to upgrade
+		return nil // Not a TCPConf connection, nothing to upgrade
 	}
 
-	// Apply TCP-specific settings
+	// Apply TCPConf-specific settings
 	// Disable Nagle's algorithm (TCPNoDelay) if configured
 	if err := tcpConn.SetNoDelay(config.Transport.TCPNoDelay); err != nil {
 		return err
@@ -62,7 +62,7 @@ func (c *serverConnector) UpgradeConnection(conn net.Conn, config common.ServerC
 		}
 	}
 
-	// Enable TCP keep-alive if configured
+	// Enable TCPConf keep-alive if configured
 	if config.Transport.TCPKeepAliveSec > 0 {
 		if err := tcpConn.SetKeepAlive(true); err != nil {
 			return err
@@ -75,7 +75,7 @@ func (c *serverConnector) UpgradeConnection(conn net.Conn, config common.ServerC
 		}
 	}
 
-	// Set TCP linger option if configured
+	// Set TCPConf linger option if configured
 	if config.Transport.TCPLingerSec >= 0 {
 		if err := tcpConn.SetLinger(config.Transport.TCPLingerSec); err != nil {
 			return err
@@ -89,7 +89,7 @@ func (c *serverConnector) UpgradeConnection(conn net.Conn, config common.ServerC
 // Server Transport Factory Method
 // --------------------------------------------------------------------------
 
-// NewTCPServerTransport creates a new TCP server transport with specified buffer size
+// NewTCPServerTransport creates a new TCPConf server transport with specified buffer size
 func NewTCPServerTransport() transport.IRPCServerTransport {
 	return base.NewBaseServerTransport(&serverConnector{})
 }

@@ -181,28 +181,28 @@ func (c *ClientConfig) String() string {
 // Transport specific configuration
 // ---------------------------------------------------------------
 
-type TCPTransportConfig struct {
+type TCPConf struct {
 	TCPNoDelay      bool
 	TCPKeepAliveSec int
 	TCPLingerSec    int
 }
 
-func (c *TCPTransportConfig) String() string {
+func (c *TCPConf) String() string {
 	var sb strings.Builder
 
-	addField("TCP No Delay", strconv.FormatBool(c.TCPNoDelay), &sb)
-	addField("TCP Keep Alive (sec)", strconv.Itoa(c.TCPKeepAliveSec), &sb)
-	addField("TCP Linger (sec)", strconv.Itoa(c.TCPLingerSec), &sb)
+	addField("TCPConf No Delay", strconv.FormatBool(c.TCPNoDelay), &sb)
+	addField("TCPConf Keep Alive (sec)", strconv.Itoa(c.TCPKeepAliveSec), &sb)
+	addField("TCPConf Linger (sec)", strconv.Itoa(c.TCPLingerSec), &sb)
 
 	return sb.String()
 }
 
-type SocketTransportConfig struct {
+type SocketConf struct {
 	WriteBufferSize int
 	ReadBufferSize  int
 }
 
-func (c *SocketTransportConfig) String() string {
+func (c *SocketConf) String() string {
 	var sb strings.Builder
 
 	addField("Write Buffer Size", strconv.Itoa(c.WriteBufferSize), &sb)
@@ -212,8 +212,8 @@ func (c *SocketTransportConfig) String() string {
 }
 
 type ServerTransportConfig struct {
-	TCPTransportConfig
-	SocketTransportConfig
+	TCPConf
+	SocketConf
 	// Server specific settings
 	WorkersPerConn int
 	Endpoint       string
@@ -224,15 +224,15 @@ func (c *ServerTransportConfig) String() string {
 
 	addField("Workers Per Connection", strconv.Itoa(c.WorkersPerConn), &sb)
 	addField("Endpoint", c.Endpoint, &sb)
-	sb.WriteString(c.SocketTransportConfig.String())
-	sb.WriteString(c.TCPTransportConfig.String())
+	sb.WriteString(c.SocketConf.String())
+	sb.WriteString(c.TCPConf.String())
 
 	return sb.String()
 }
 
 type ClientTransportConfig struct {
-	TCPTransportConfig
-	SocketTransportConfig
+	TCPConf
+	SocketConf
 	// Client specific settings
 	ConnectionsPerEndpoint int
 	Endpoints              []string
@@ -254,8 +254,8 @@ func (c *ClientTransportConfig) String() string {
 
 	addField("Retry Count", strconv.Itoa(c.RetryCount), &sb)
 
-	sb.WriteString(c.SocketTransportConfig.String())
-	sb.WriteString(c.TCPTransportConfig.String())
+	sb.WriteString(c.SocketConf.String())
+	sb.WriteString(c.TCPConf.String())
 
 	return sb.String()
 }

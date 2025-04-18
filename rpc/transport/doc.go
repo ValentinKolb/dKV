@@ -5,7 +5,7 @@
 // The package focuses on:
 //   - Defining clear interfaces for client and server transport layers
 //   - Supporting shard-based request routing
-//   - Enabling multiple transport implementations (HTTP, TCP, Unix sockets)
+//   - Enabling multiple transport implementations (HTTP, TCPConf, Unix sockets)
 //
 // Key Components:
 //

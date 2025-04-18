@@ -8,7 +8,7 @@
 //     including the Message protocol, configuration structures, and logging.
 //
 //   - transport: Network communication abstractions with pluggable implementations
-//     (TCP, Unix sockets, HTTP).
+//     (TCPConf, Unix sockets, HTTP).
 //
 //   - serializer: Message serialization with multiple format options (Binary, JSON, GOB)
 //     for converting between Message objects and byte arrays.
