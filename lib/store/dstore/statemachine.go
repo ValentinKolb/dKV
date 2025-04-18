@@ -146,7 +146,7 @@ func (fsm *KVStateMachine) Update(entries []sm.Entry) ([]sm.Entry, error) {
 	}
 
 	// Log if the update took long
-	if elapsed := time.Since(start); elapsed > time.Millisecond {
+	if elapsed := time.Since(start); elapsed > 5*time.Millisecond {
 		log.Infof("Statemashine took long to update. Batch updated %d entries, took %.2fms:", len(entries), float64(elapsed)/float64(time.Millisecond))
 	}
 	return entries, nil

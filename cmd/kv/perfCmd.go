@@ -1,9 +1,12 @@
 package kv
 
 import (
+	"bytes"
+	"crypto/rand"
 	"encoding/csv"
 	"fmt"
 	"github.com/ValentinKolb/dKV/cmd/util"
+	"github.com/ValentinKolb/dKV/lib/store"
 	"github.com/ValentinKolb/dKV/rpc/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -12,6 +15,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -30,20 +35,29 @@ var (
 	perfNumThreads       = -1
 	perfKeySpread        = -1
 	perfSkip             = make([]string, 0)
+
+	integrationTest = &cobra.Command{
+		Use:     "test",
+		Short:   "Run Integration tests on the server",
+		Long:    "",
+		RunE:    runTests,
+		PreRunE: processPerfConfig,
+	}
 )
 
 func init() {
 	// add flags
 	key := "skip"
-	KeyValueCommands.PersistentFlags().String(key, "localhost:8080", util.WrapString("Benchmarks to skip (comma separated - e.g. set,get)"))
+	perfTestCmd.PersistentFlags().String(key, "", util.WrapString("Benchmarks to skip (comma separated - e.g. set,get)"))
 	key = "threads"
-	KeyValueCommands.PersistentFlags().Int(key, 10, util.WrapString("Number of threads to use for the benchmark"))
+	perfTestCmd.PersistentFlags().Int(key, 10, util.WrapString("Number of threads to use for the benchmark"))
+	integrationTest.PersistentFlags().Int(key, 10, util.WrapString("Number of threads to use for the benchmark"))
 	key = "value-size"
-	KeyValueCommands.PersistentFlags().Int(key, 128, util.WrapString("The size of the value used for testing (in Bytes)"))
+	perfTestCmd.PersistentFlags().Int(key, 128, util.WrapString("The size of the value used for testing (in Bytes)"))
 	key = "large-value-size"
-	KeyValueCommands.PersistentFlags().Int(key, 512, util.WrapString("How large the value for the set-large test should be (in Kilo Bytes)"))
+	perfTestCmd.PersistentFlags().Int(key, 512, util.WrapString("How large the value for the set-large test should be (in Kilo Bytes)"))
 	key = "keys"
-	KeyValueCommands.PersistentFlags().Int(key, 100, util.WrapString("How many different keys to use for the tests"))
+	perfTestCmd.PersistentFlags().Int(key, 100, util.WrapString("How many different keys to use for the tests"))
 	key = "csv"
 	perfTestCmd.Flags().String(key, "", util.WrapString("Optional path to save benchmark results as CSV"))
 }
@@ -65,7 +79,7 @@ func processPerfConfig(cmd *cobra.Command, _ []string) error {
 
 func run(_ *cobra.Command, _ []string) error {
 
-	fmt.Println("Performance testing tool for dKV servers")
+	fmt.Println("Benchmarking tool for dKV servers")
 
 	// Print configuration
 	fmt.Println()
@@ -74,7 +88,7 @@ func run(_ *cobra.Command, _ []string) error {
 	fmt.Printf("Threads: %d\n", perfNumThreads)
 	fmt.Println()
 
-	fmt.Println("staring tests...")
+	fmt.Println("staring benchmarks...")
 
 	// Create results map
 	results := make(map[string]testing.BenchmarkResult)
@@ -354,8 +368,8 @@ func run(_ *cobra.Command, _ []string) error {
 
 		b.RunParallel(func(pb *testing.PB) {
 			counter := 0
-			key := getKey(counter)
 			for pb.Next() {
+				key := getKey(counter)
 				var err error
 				switch counter % 4 {
 				case 0: // set
@@ -501,6 +515,153 @@ func writeResultsToCSV(csvPath string, results map[string]testing.BenchmarkResul
 			return fmt.Errorf("failed to write row for test %s: %v", test, err)
 		}
 	}
+
+	return nil
+}
+
+// --------------------------------------------------------------------------
+// Integration tests
+// --------------------------------------------------------------------------
+
+func runTests(_ *cobra.Command, _ []string) error {
+
+	fmt.Println("Integration testing tool for dKV servers")
+
+	// Print configuration
+	fmt.Println()
+	fmt.Println("Configuration:")
+	fmt.Println(util.GetClientConfig().String())
+	fmt.Printf("Threads: %d\n", perfNumThreads)
+	fmt.Println()
+
+	fmt.Println("staring tests...")
+
+	runTest := func() error {
+		value := make([]byte, 8)
+		_, err := rand.Read(value)
+		if err != nil {
+			return fmt.Errorf("(integration-test) - error generating random bytes: %v\n", err)
+		}
+
+		key := fmt.Sprintf("%s-%x", perfKeyPrefix, value)
+
+		// cleanup
+		defer rpcStore.Delete(key)
+
+		defer func(rpcStore store.IStore, key string) {
+			err := rpcStore.Delete(key)
+			if err != nil {
+				fmt.Println("Failed to delete key", key, err)
+			}
+		}(rpcStore, key)
+
+		// First check if key exists
+		exists, err := rpcStore.Has(key)
+
+		if err != nil {
+			return fmt.Errorf("(integration-test) - error checking key: %v\n", err)
+		}
+
+		if exists {
+			return fmt.Errorf("(integration-test) - key should not exist befor test: %s", key)
+
+		}
+
+		// Set the key
+		err = rpcStore.Set(key, value)
+
+		if err != nil {
+			return fmt.Errorf("(integration-test) - error setting key: %v\n", err)
+
+		}
+
+		// Get the key
+		gotValue, ok, err := rpcStore.Get(key)
+
+		if err != nil {
+			return fmt.Errorf("(integration-test) - error getting key: %v\n", err)
+
+		}
+
+		if !ok {
+			return fmt.Errorf("(integration-test) - key should exist after set: %s", key)
+		}
+
+		// Check if the value is correct
+		if !bytes.Equal(gotValue, value) {
+			return fmt.Errorf("(integration-test) - value mismatch for key %s: expected %x, got %x", key, value, gotValue)
+
+		}
+
+		// Expire the key
+		err = rpcStore.Expire(key)
+
+		if err != nil {
+			return fmt.Errorf("(integration-test) - error expiring key: %v\n", err)
+
+		}
+
+		// Check if the value is still there
+		_, ok, err = rpcStore.Get(key)
+
+		if err != nil {
+			return fmt.Errorf("(integration-test) - error getting key after expire: %v\n", err)
+
+		}
+
+		if ok {
+			return fmt.Errorf("(integration-test) - value should not exist after expire: %s", key)
+
+		}
+
+		// Check if has works
+		if exists, err := rpcStore.Has(key); err != nil {
+			return fmt.Errorf("(integration-test) - error checking key after expire: %v\n", err)
+
+		} else if !exists {
+			return fmt.Errorf("(integration-test) - key should exist after expire: %s", key)
+
+		}
+
+		// Delete the key
+		err = rpcStore.Delete(key)
+
+		if err != nil {
+			return fmt.Errorf("(integration-test) - error deleting key: %v\n", err)
+
+		}
+
+		// Check if the key is deleted
+		exists, err = rpcStore.Has(key)
+
+		if err != nil {
+			return fmt.Errorf("(integration-test) - error checking key after delete: %v\n", err)
+
+		}
+
+		return nil
+	}
+
+	var errCount uint64 = 0
+	wg := sync.WaitGroup{}
+
+	for i := 0; i < perfNumThreads; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < 100; i++ {
+				err := runTest()
+				if err != nil {
+					log.Printf("%v", err)
+					atomic.AddUint64(&errCount, 1)
+				}
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	fmt.Printf("\nFinished %d test runs with %d errors\n", perfNumThreads*100, errCount)
 
 	return nil
 }

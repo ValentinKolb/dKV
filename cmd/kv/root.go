@@ -37,6 +37,7 @@ func init() {
 	KeyValueCommands.AddCommand(delCmd)
 	KeyValueCommands.AddCommand(hasCmd)
 	KeyValueCommands.AddCommand(perfTestCmd)
+	KeyValueCommands.AddCommand(integrationTest)
 }
 
 // setupKVClient initializes the RPC store client

@@ -240,6 +240,7 @@ func (maple *mapleImpl) compute(key string, value []byte, writeIndex uint64, exp
 			if del {
 				// an old entry existed -> gc event
 				if oldEntryExists {
+
 					event = &internal.Event{
 						Type: internal.EventTDelete,
 						Key:  intKey,
@@ -252,6 +253,7 @@ func (maple *mapleImpl) compute(key string, value []byte, writeIndex uint64, exp
 
 			// add item to gc if a ttl is set
 			if expireIn > 0 || deleteIn > 0 {
+
 				event = &internal.Event{
 					Type: internal.EventTWrite,
 					Key:  intKey,
@@ -285,6 +287,7 @@ func (maple *mapleImpl) Expire(key string, writeIndex uint64) {
 		// case expire
 		old.ExpireAt = writeIndex
 		old.Value = nil
+
 		return old, false
 	})
 }
@@ -299,6 +302,7 @@ func (maple *mapleImpl) Delete(key string, writeIndex uint64) {
 			return old, true // set delete to true because else the value will be created
 		}
 		old.DeleteAt = writeIndex
+
 		return old, false
 	})
 }
@@ -328,12 +332,14 @@ func (maple *mapleImpl) Get(key string) ([]byte, bool) {
 	shard.Data.Compute(intKey, func(e internal.Entry, loaded bool) (internal.Entry, bool) {
 		// case the key doesn't exist
 		if !loaded {
+
 			ok = false
 			return e, true // set delete to true because else the value will be created
 		}
 
 		// case deleted or expired
 		if isExpired, isDeleted := e.TTLInfo(maple.currIndex.Load()); isDeleted || isExpired {
+
 			return e, false
 		}
 
