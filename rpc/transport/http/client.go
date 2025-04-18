@@ -30,8 +30,8 @@ type httpClientTransport struct {
 
 func (transport *httpClientTransport) Connect(config common.ClientConfig) error {
 	// Parse each server URL
-	parsedURLs := make([]*url.URL, len(config.Endpoints))
-	for i, server := range config.Endpoints {
+	parsedURLs := make([]*url.URL, len(config.Transport.Endpoints))
+	for i, server := range config.Transport.Endpoints {
 		parsedURL, err := url.Parse(server)
 		if err != nil {
 			return err
@@ -52,7 +52,7 @@ func (transport *httpClientTransport) Connect(config common.ClientConfig) error 
 	transport.client = client
 	transport.serverURLs = parsedURLs
 	transport.counter = 0
-	transport.retryCount = config.RetryCount
+	transport.retryCount = config.Transport.RetryCount
 
 	// No error
 	return nil

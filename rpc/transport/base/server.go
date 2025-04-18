@@ -5,10 +5,13 @@ import (
 	"github.com/ValentinKolb/dKV/rpc/common"
 	"github.com/ValentinKolb/dKV/rpc/transport"
 	"io"
-	"math"
 	"net"
 	"sync"
 	"time"
+)
+
+const (
+	defaultBufferSize = 512 * 1024 // 64 KB
 )
 
 // -----------------------------------------------------------
@@ -22,6 +25,9 @@ type IServerConnector interface {
 
 	// GetName returns the name of the transport type (e.g., "unix", "tcp")
 	GetName() string
+
+	// UpgradeConnection applies protocol-specific settings to an accepted connection
+	UpgradeConnection(conn net.Conn, config common.ServerConfig) error
 }
 
 // -----------------------------------------------------------
@@ -30,13 +36,12 @@ type IServerConnector interface {
 
 // serverTransport implements the core server transport functionality
 type serverTransport struct {
-	connector         IServerConnector
-	handler           transport.ServerHandleFunc
-	config            common.ServerConfig
-	listener          net.Listener
-	bufferPool        *sync.Pool
-	bufferSize        int
-	maxWorkersPerConn int
+	connector  IServerConnector
+	handler    transport.ServerHandleFunc
+	config     common.ServerConfig
+	listener   net.Listener
+	bufferPool *sync.Pool
+	bufferSize int
 }
 
 // -----------------------------------------------------------
@@ -44,20 +49,10 @@ type serverTransport struct {
 // -----------------------------------------------------------
 
 // NewBaseServerTransport creates a new base server transport with per-connection worker pool
-func NewBaseServerTransport(connector IServerConnector, bufferSize int, maxWorkersPerConn int) transport.IRPCServerTransport {
-
-	// minimum one worker per connection
-	maxWorkersPerConn = int(math.Min(float64(maxWorkersPerConn), 1))
-
+func NewBaseServerTransport(connector IServerConnector) transport.IRPCServerTransport {
 	return &serverTransport{
-		connector:         connector,
-		bufferSize:        bufferSize,
-		maxWorkersPerConn: maxWorkersPerConn,
-		bufferPool: &sync.Pool{
-			New: func() interface{} {
-				return make([]byte, bufferSize)
-			},
-		},
+		connector:  connector,
+		bufferPool: nil, // Will be initialized in Listen()
 	}
 }
 
@@ -72,21 +67,41 @@ func (t *serverTransport) RegisterHandler(handler transport.ServerHandleFunc) {
 func (t *serverTransport) Listen(config common.ServerConfig) error {
 	t.config = config
 
+	bufferSize := config.Transport.ReadBufferSize
+
+	if bufferSize <= 0 {
+		bufferSize = defaultBufferSize
+	}
+
+	t.bufferPool = &sync.Pool{
+		New: func() interface{} {
+			return make([]byte, config.Transport.ReadBufferSize)
+		},
+	}
+
 	// Create listener using the connector
 	listener, err := t.connector.Listen(config)
 	if err != nil {
 		return fmt.Errorf("failed to create listener: %v", err)
 	}
+
 	t.listener = listener
 
 	Logger.Infof("Starting %s server on %s with %d workers per connection",
-		t.connector.GetName(), config.Endpoint, t.maxWorkersPerConn)
+		t.connector.GetName(), config.Transport.Endpoint, config.Transport.WorkersPerConn)
 
 	// Accept connections
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
 			Logger.Errorf("Accept error: %v", err)
+			continue
+		}
+
+		// Upgrade the connection with protocol-specific settings
+		if err := t.connector.UpgradeConnection(conn, config); err != nil {
+			Logger.Errorf("Failed to upgrade connection: %v", err)
+			conn.Close()
 			continue
 		}
 
@@ -108,7 +123,7 @@ func (t *serverTransport) handleConnection(conn net.Conn) {
 
 	// Create a semaphore to limit concurrent workers for this connection
 	// The buffered channel acts as a counting semaphore
-	workerSemaphore := make(chan struct{}, t.maxWorkersPerConn)
+	workerSemaphore := make(chan struct{}, t.config.Transport.WorkersPerConn)
 
 	// Create a wait group to wait for all workers to finish
 	var wg sync.WaitGroup
@@ -167,7 +182,6 @@ func (t *serverTransport) handleConnection(conn net.Conn) {
 		}
 
 		// Acquire a slot in the semaphore (blocks if maxWorkersPerConn is reached)
-		// This is the key mechanism that limits the number of concurrent workers
 		workerSemaphore <- struct{}{}
 
 		// Increment the wait group counter

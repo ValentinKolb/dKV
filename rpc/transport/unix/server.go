@@ -25,7 +25,7 @@ func (c *serverConnector) GetName() string {
 }
 
 func (c *serverConnector) Listen(config common.ServerConfig) (net.Listener, error) {
-	socketPath := config.Endpoint
+	socketPath := config.Transport.Endpoint
 
 	// Remove existing socket file if it exists
 	if err := os.RemoveAll(socketPath); err != nil {
@@ -41,16 +41,31 @@ func (c *serverConnector) Listen(config common.ServerConfig) (net.Listener, erro
 	return listener, nil
 }
 
+// UpgradeConnection applies performance optimizations to a Unix socket connection
+func (c *serverConnector) UpgradeConnection(conn net.Conn, config common.ServerConfig) error {
+	unixConn, ok := conn.(*net.UnixConn)
+	if !ok {
+		return nil // Not a Unix connection, nothing to upgrade
+	}
+
+	sendBufferSize := 256 * 1024 // 256 KB for server send
+	if err := unixConn.SetWriteBuffer(sendBufferSize); err != nil {
+		return err
+	}
+
+	recvBufferSize := 256 * 1024 // 256 KB for server receive
+	if err := unixConn.SetReadBuffer(recvBufferSize); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // --------------------------------------------------------------------------
 // Server Transport Factory Method
 // --------------------------------------------------------------------------
 
-// NewUnixDefaultServerTransport creates a new Unix server transport with default buffer size
-func NewUnixDefaultServerTransport(workers int) transport.IRPCServerTransport {
-	return NewUnixServerTransport(defaultBufferSize, workers)
-}
-
 // NewUnixServerTransport creates a new Unix server transport with specified buffer size
-func NewUnixServerTransport(bufferSize, workers int) transport.IRPCServerTransport {
-	return base.NewBaseServerTransport(&serverConnector{}, bufferSize, workers)
+func NewUnixServerTransport() transport.IRPCServerTransport {
+	return base.NewBaseServerTransport(&serverConnector{})
 }

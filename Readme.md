@@ -1,6 +1,6 @@
 # Distributed Key-Value Store in Go (dKV)
 
-*A distributed, strongly consistent key-value store library written in Go,
+*A distributed, consistent key-value store library written in Go,
 leveraging RAFT consensus for linearizability and fault tolerance.*
 
 ## Features
@@ -138,7 +138,7 @@ The outermost component enables remote communication with interchangeable transp
 |   +------------------------+   |
 |               ↓                |
 +--------------------------------+
-|    IStore / ILockManager       |   RAFT Cluster
+|     IStore / ILockManager      |   RAFT Cluster
 +--------------------------------+
 ```
 
@@ -218,7 +218,7 @@ These operations can be performed either via the CLI or programmatically both re
 The lock manager provides powerful distributed mutual exclusion capabilities when combined with a distributed store backend.
 When using `lockmgr(dstore)`, the lock guarantees are automatically extended across the entire cluster,
 ensuring that if a process on any node acquires a lock, no other process anywhere in the cluster can acquire the same lock simultaneously.
-This cluster-wide protection is built on the RAFT consensus protocol's strong consistency guarantees:
+This cluster-wide protection is built on the RAFT consensus protocol's linearizability consistency guarantees:
 
 ```bash
 # Acquire a distributed lock (will be exclusively held across the entire cluster)

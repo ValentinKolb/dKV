@@ -25,9 +25,10 @@ var (
 		PreRunE: processPerfConfig,
 	}
 	perfKeyPrefix        = "__test"
-	perfLargeValueSizeKB = 100
-	perfNumThreads       = 10
-	perfKeySpread        = 100
+	perfValueSizeBytes   = -1
+	perfLargeValueSizeKB = -1
+	perfNumThreads       = -1
+	perfKeySpread        = -1
 	perfSkip             = make([]string, 0)
 )
 
@@ -37,8 +38,10 @@ func init() {
 	KeyValueCommands.PersistentFlags().String(key, "localhost:8080", util.WrapString("Benchmarks to skip (comma separated - e.g. set,get)"))
 	key = "threads"
 	KeyValueCommands.PersistentFlags().Int(key, 10, util.WrapString("Number of threads to use for the benchmark"))
+	key = "value-size"
+	KeyValueCommands.PersistentFlags().Int(key, 128, util.WrapString("The size of the value used for testing (in Bytes)"))
 	key = "large-value-size"
-	KeyValueCommands.PersistentFlags().Int(key, 1000, util.WrapString("How large the value for the set-large test should be (in KB)"))
+	KeyValueCommands.PersistentFlags().Int(key, 512, util.WrapString("How large the value for the set-large test should be (in Kilo Bytes)"))
 	key = "keys"
 	KeyValueCommands.PersistentFlags().Int(key, 100, util.WrapString("How many different keys to use for the tests"))
 	key = "csv"
@@ -51,6 +54,7 @@ func processPerfConfig(cmd *cobra.Command, _ []string) error {
 	}
 
 	// Read the configuration from the command line flags and environment variables
+	perfValueSizeBytes = viper.GetInt("value-size")
 	perfLargeValueSizeKB = viper.GetInt("large-value-size")
 	perfKeySpread = viper.GetInt("keys")
 	perfNumThreads = viper.GetInt("threads")
@@ -82,6 +86,7 @@ func run(_ *cobra.Command, _ []string) error {
 
 		// prepare keys
 		getKey, iter := getKeys("set")
+		value := make([]byte, perfValueSizeBytes)
 
 		// cleanup
 		b.Cleanup(func() {
@@ -100,7 +105,7 @@ func run(_ *cobra.Command, _ []string) error {
 		b.RunParallel(func(pb *testing.PB) {
 			counter := 0
 			for pb.Next() {
-				err := rpcStore.Set(getKey(counter), []byte("test"))
+				err := rpcStore.Set(getKey(counter), value)
 				if err != nil {
 					log.Printf("(set) - error setting key: %v\n", err)
 				}
@@ -160,10 +165,11 @@ func run(_ *cobra.Command, _ []string) error {
 
 		// prepare keys
 		getKey, iter := getKeys("get")
+		value := make([]byte, perfValueSizeBytes)
 
 		// set keys
 		iter(func(k string) {
-			err := rpcStore.Set(k, []byte("test"))
+			err := rpcStore.Set(k, value)
 			if err != nil {
 				log.Printf("(get) - error setting key: %v\n", err)
 			}
@@ -205,10 +211,11 @@ func run(_ *cobra.Command, _ []string) error {
 
 		// prepare keys
 		getKey, iter := getKeys("delete")
+		value := make([]byte, perfValueSizeBytes)
 
 		// set keys
 		iter(func(k string) {
-			err := rpcStore.Set(k, []byte("test"))
+			err := rpcStore.Set(k, value)
 			if err != nil {
 				log.Printf("(delete) - error setting key: %v\n", err)
 			}
@@ -250,10 +257,11 @@ func run(_ *cobra.Command, _ []string) error {
 
 		// prepare keys
 		getKey, iter := getKeys("has")
+		value := make([]byte, perfValueSizeBytes)
 
 		// set keys
 		iter(func(k string) {
-			err := rpcStore.Set(k, []byte("test"))
+			err := rpcStore.Set(k, value)
 			if err != nil {
 				log.Printf("(has) - error setting key: %v\n", err)
 			}
@@ -320,10 +328,11 @@ func run(_ *cobra.Command, _ []string) error {
 
 		// prepare keys
 		getKey, iter := getKeys("mixed")
+		value := make([]byte, perfValueSizeBytes)
 
 		// set keys
 		iter(func(k string) {
-			err := rpcStore.Set(k, []byte("test"))
+			err := rpcStore.Set(k, value)
 			if err != nil {
 				log.Printf("(mixed) - error setting key: %v\n", err)
 			}
@@ -350,7 +359,7 @@ func run(_ *cobra.Command, _ []string) error {
 				var err error
 				switch counter % 4 {
 				case 0: // set
-					err = rpcStore.Set(key, []byte("test"))
+					err = rpcStore.Set(key, value)
 				case 1: // get
 					_, _, err = rpcStore.Get(key)
 				case 2: // delete
@@ -476,10 +485,10 @@ func writeResultsToCSV(csvPath string, results map[string]testing.BenchmarkResul
 			time.Duration(nsPerOp).String(),
 			fmt.Sprintf("%.0f", opsPerSec),
 			skipped,
-			strings.Join(config.Endpoints, ";"),
+			strings.Join(config.Transport.Endpoints, ";"),
 			strconv.Itoa(config.TimeoutSecond),
-			strconv.Itoa(config.RetryCount),
-			strconv.Itoa(config.ConnectionsPerEndpoint),
+			strconv.Itoa(config.Transport.RetryCount),
+			strconv.Itoa(config.Transport.ConnectionsPerEndpoint),
 			strconv.FormatUint(util.GetShardID(), 10),
 			viper.GetString("serializer"),
 			viper.GetString("transport"),

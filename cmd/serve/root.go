@@ -58,17 +58,32 @@ func init() {
 	key = "timeout"
 	ServeCmd.PersistentFlags().Int64(key, 5, cmdUtil.WrapString("(ConfServerModeMultiNode Mode) Timeout in seconds"))
 
-	key = "endpoint"
-	ServeCmd.PersistentFlags().String(key, "0.0.0.0:8080", cmdUtil.WrapString("The address on which the API will listen (e.g. http:localhost:8080, /tmp/dkv.sock, ...)"))
-
-	key = "workers"
-	ServeCmd.PersistentFlags().Int(key, 1000, cmdUtil.WrapString("How many worker the server should use per connection (ignored for http)"))
-
 	key = "buffer-pool-size"
 	ServeCmd.PersistentFlags().Int(key, 64, cmdUtil.WrapString("Pre-allocated buffer size for the server (in KB, ignored for http)"))
 
 	key = "log-level"
 	ServeCmd.PersistentFlags().String(key, "info", cmdUtil.WrapString("LogLevel is the level at which logs will be output (debug, info, warn, error)"))
+
+	key = "transport-endpoint"
+	ServeCmd.PersistentFlags().String(key, "0.0.0.0:8080", cmdUtil.WrapString("The address on which the API will listen (e.g. http:localhost:8080, /tmp/dkv.sock, ...)"))
+
+	key = "transport-write-buffer"
+	ServeCmd.PersistentFlags().Int(key, 512, cmdUtil.WrapString("The size of the write buffer for the transport (in KB, ignored for http)"))
+
+	key = "transport-read-buffer"
+	ServeCmd.PersistentFlags().Int(key, 512, cmdUtil.WrapString("The size of the read buffer for the transport (in KB, ignored for http)"))
+
+	key = "transport-tcp-nodelay"
+	ServeCmd.PersistentFlags().Bool(key, true, cmdUtil.WrapString("Whether to enable TCP_NODELAY for the transport (only for TCP)"))
+
+	key = "transport-tcp-keepalive"
+	ServeCmd.PersistentFlags().Int(key, 0, cmdUtil.WrapString("The keepalive interval for the transport (in seconds, only for TCP)"))
+
+	key = "transport-tcp-linger"
+	ServeCmd.PersistentFlags().Int(key, 0, cmdUtil.WrapString("The linger time for the transport (in seconds, only for TCP)"))
+
+	key = "transport-workers"
+	ServeCmd.PersistentFlags().Int(key, 10, cmdUtil.WrapString("How many worker the server should use per connection (ignored for http)"))
 }
 
 // processConfig reads the configuration from the command line flags and environment variables and converts them to the server configuration
@@ -77,6 +92,23 @@ func processConfig(cmd *cobra.Command, _ []string) error {
 	if err := viper.BindPFlags(cmd.Flags()); err != nil {
 		return err
 	}
+
+	// read transport configuration
+	transportSettings := common.ServerTransportConfig{
+		TCPTransportConfig: common.TCPTransportConfig{
+			TCPKeepAliveSec: viper.GetInt("transport-tcp-keepalive"),
+			TCPLingerSec:    viper.GetInt("transport-tcp-linger"),
+			TCPNoDelay:      viper.GetBool("transport-tcp-nodelay"),
+		},
+		SocketTransportConfig: common.SocketTransportConfig{
+			WriteBufferSize: viper.GetInt("transport-write-buffer") * 1024,
+			ReadBufferSize:  viper.GetInt("transport-read-buffer") * 1024,
+		},
+		WorkersPerConn: viper.GetInt("transport-workers"),
+		Endpoint:       viper.GetString("transport-endpoint"),
+	}
+
+	serveCmdConfig.Transport = transportSettings
 
 	// parse shards
 	shardsConfig := viper.GetString("shards")
@@ -122,7 +154,6 @@ func processConfig(cmd *cobra.Command, _ []string) error {
 	serveCmdConfig.CompactionOverhead = viper.GetUint64("compaction-overhead")
 	serveCmdConfig.DataDir = viper.GetString("data-dir")
 	serveCmdConfig.TimeoutSecond = viper.GetInt64("timeout")
-	serveCmdConfig.Endpoint = viper.GetString("endpoint")
 	serveCmdConfig.LogLevel = viper.GetString("log-level")
 
 	// parse replica id
@@ -175,15 +206,13 @@ func run(_ *cobra.Command, _ []string) error {
 
 	// Parse the transport
 	var t transport.IRPCServerTransport
-	workers := viper.GetInt("workers")
-	bufferPoolSize := viper.GetInt("buffer-pool-size") * 1024 // convert to bytes
 	switch viper.GetString("transport") {
 	case "http":
 		t = http.NewHttpServerTransport()
 	case "tcp":
-		t = tcp.NewTCPServerTransport(bufferPoolSize, workers)
+		t = tcp.NewTCPServerTransport()
 	case "unix":
-		t = unix.NewUnixServerTransport(bufferPoolSize, workers)
+		t = unix.NewUnixServerTransport()
 	default:
 		return fmt.Errorf("invalid transport %s", viper.GetString("transport"))
 	}

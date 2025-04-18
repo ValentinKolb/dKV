@@ -39,10 +39,10 @@ func (t *httpServerTransport) Listen(config common.ServerConfig) error {
 	mux.HandleFunc("POST /{shardId}", loggerMiddleware(t.handleRequest))
 
 	// Get address from util
-	Logger.Infof("Starting HTTP server on %s", t.config.Endpoint)
+	Logger.Infof("Starting HTTP server on %s", t.config.Transport.Endpoint)
 
 	// Set up the server with the address and handler
-	return http.ListenAndServe(t.config.Endpoint, mux)
+	return http.ListenAndServe(t.config.Transport.Endpoint, mux)
 }
 
 // --------------------------------------------------------------------------

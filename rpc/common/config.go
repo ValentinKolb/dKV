@@ -3,7 +3,6 @@ package common
 import (
 	"fmt"
 	"github.com/lni/dragonboat/v4/config"
-	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -80,11 +79,11 @@ type ServerConfig struct {
 	// remote kvStore parameters
 	TimeoutSecond int64
 
-	// HTTP api settings
-	Endpoint string
-
 	// Logging configuration
 	LogLevel string
+
+	// Transport configuration
+	Transport ServerTransportConfig
 }
 
 // HasRemoteShard checks if the configuration contains any remote shards
@@ -101,53 +100,45 @@ func (c *ServerConfig) HasRemoteShard() bool {
 func (c *ServerConfig) String() string {
 	var sb strings.Builder
 
-	// Create helper functions for consistent formatting
-	addSection := func(title string) {
-		sb.WriteString("\n")
-		sb.WriteString(fmt.Sprintf("%s\n", strings.ToUpper(title)))
-	}
-
-	addField := func(name, value string) {
-		sb.WriteString(fmt.Sprintf("  %-22s: %s\n", name, value))
-	}
-
 	// RPC settings
-	addSection("RPC Server")
-	addField("Endpoint", c.Endpoint)
-	addField("Timeout", fmt.Sprintf("%d sec", c.TimeoutSecond))
+	addSection("RPC Server", &sb)
+	addField("Timeout", fmt.Sprintf("%d sec", c.TimeoutSecond), &sb)
+
+	// Transport settings
+	sb.WriteString(c.Transport.String())
 
 	// Logging configuration
-	addSection("Logging")
-	addField("Log Level", c.LogLevel)
+	addSection("Logging", &sb)
+	addField("Log Level", c.LogLevel, &sb)
 
 	// Shards
-	addSection("Shards")
+	addSection("Shards", &sb)
 	for _, shard := range c.Shards {
-		addField(strconv.FormatUint(shard.ShardID, 10), string(shard.Type))
+		addField(strconv.FormatUint(shard.ShardID, 10), string(shard.Type), &sb)
 	}
 
 	if c.HasRemoteShard() {
 		// Node Identity
-		addSection("Node Identity")
-		addField("RAFT Address", c.ClusterMembers[c.ReplicaID])
-		addField("Node ID", strconv.FormatUint(c.ReplicaID, 10))
+		addSection("Node Identity", &sb)
+		addField("RAFT Address", c.ClusterMembers[c.ReplicaID], &sb)
+		addField("Node ID", strconv.FormatUint(c.ReplicaID, 10), &sb)
 
 		// RAFT parameters
-		addSection("RAFT Parameters")
-		addField("Round Trip Time (ms)", fmt.Sprintf("%d ms", c.RTTMillisecond))
-		addField("Election RTT (ms)", fmt.Sprintf("%d", c.RTTMillisecond*electionRTTFactor))
-		addField("Heartbeat RTT (ms)", fmt.Sprintf("%d", c.RTTMillisecond*heartbeatRTTFactor))
-		addField("Check Quorum", fmt.Sprintf("%t", true))
-		addField("Snapshot Entries", fmt.Sprintf("%d", c.SnapshotEntries))
-		addField("Compaction Overhead", fmt.Sprintf("%d", c.CompactionOverhead))
-		addField("Timeout", fmt.Sprintf("%d sec", c.TimeoutSecond))
+		addSection("RAFT Parameters", &sb)
+		addField("Round Trip Time (ms)", fmt.Sprintf("%d ms", c.RTTMillisecond), &sb)
+		addField("Election RTT (ms)", fmt.Sprintf("%d", c.RTTMillisecond*electionRTTFactor), &sb)
+		addField("Heartbeat RTT (ms)", fmt.Sprintf("%d", c.RTTMillisecond*heartbeatRTTFactor), &sb)
+		addField("Check Quorum", fmt.Sprintf("%t", true), &sb)
+		addField("Snapshot Entries", fmt.Sprintf("%d", c.SnapshotEntries), &sb)
+		addField("Compaction Overhead", fmt.Sprintf("%d", c.CompactionOverhead), &sb)
+		addField("Timeout", fmt.Sprintf("%d sec", c.TimeoutSecond), &sb)
 
 		// Storage
-		addSection("Storage")
-		addField("Data Directory", c.DataDir)
+		addSection("Storage", &sb)
+		addField("Data Directory", c.DataDir, &sb)
 
 		// ConfServerModeMultiNode configuration
-		addSection("ConfServerModeMultiNode")
+		addSection("ConfServerModeMultiNode", &sb)
 		sb.WriteString("  Initial ConfServerModeMultiNode Members:\n")
 
 		// Sort keys for consistent output
@@ -169,37 +160,115 @@ func (c *ServerConfig) String() string {
 // --------------------------------------------------------------------------
 
 type ClientConfig struct {
-	Endpoints              []string
-	TimeoutSecond          int
-	RetryCount             int
-	ConnectionsPerEndpoint int
+	Transport     ClientTransportConfig
+	TimeoutSecond int
 }
 
 // String returns a formatted string representation of the client configuration
 func (c *ClientConfig) String() string {
 	var sb strings.Builder
 
-	// Create helper functions for consistent formatting
-	addSection := func(title string) {
-		sb.WriteString("\n")
-		sb.WriteString(fmt.Sprintf("%s\n", strings.ToUpper(title)))
-	}
-
-	addField := func(name, value string) {
-		sb.WriteString(fmt.Sprintf("  %-22s: %s\n", name, value))
-	}
-
 	// General Client Settings
-	addSection("Client Configuration")
-	addField("Timeout", fmt.Sprintf("%d sec", c.TimeoutSecond))
-	addField("Retry Count", strconv.Itoa(c.RetryCount))
-	addField("Connections Per Endpoint", strconv.Itoa(int(math.Max(1, float64(c.ConnectionsPerEndpoint)))))
-
-	// Endpoints
-	addSection("Endpoints")
-	for i, endpoint := range c.Endpoints {
-		addField(strconv.Itoa(i), endpoint)
-	}
+	addSection("Client Configuration", &sb)
+	addField("Timeout", fmt.Sprintf("%d sec", c.TimeoutSecond), &sb)
+	// Transport settings
+	sb.WriteString(c.Transport.String())
 
 	return sb.String()
+}
+
+// ---------------------------------------------------------------
+// Transport specific configuration
+// ---------------------------------------------------------------
+
+type TCPTransportConfig struct {
+	TCPNoDelay      bool
+	TCPKeepAliveSec int
+	TCPLingerSec    int
+}
+
+func (c *TCPTransportConfig) String() string {
+	var sb strings.Builder
+
+	addField("TCP No Delay", strconv.FormatBool(c.TCPNoDelay), &sb)
+	addField("TCP Keep Alive (sec)", strconv.Itoa(c.TCPKeepAliveSec), &sb)
+	addField("TCP Linger (sec)", strconv.Itoa(c.TCPLingerSec), &sb)
+
+	return sb.String()
+}
+
+type SocketTransportConfig struct {
+	WriteBufferSize int
+	ReadBufferSize  int
+}
+
+func (c *SocketTransportConfig) String() string {
+	var sb strings.Builder
+
+	addField("Write Buffer Size", strconv.Itoa(c.WriteBufferSize), &sb)
+	addField("Read Buffer Size", strconv.Itoa(c.ReadBufferSize), &sb)
+
+	return sb.String()
+}
+
+type ServerTransportConfig struct {
+	TCPTransportConfig
+	SocketTransportConfig
+	// Server specific settings
+	WorkersPerConn int
+	Endpoint       string
+}
+
+func (c *ServerTransportConfig) String() string {
+	var sb strings.Builder
+
+	addField("Workers Per Connection", strconv.Itoa(c.WorkersPerConn), &sb)
+	addField("Endpoint", c.Endpoint, &sb)
+	sb.WriteString(c.SocketTransportConfig.String())
+	sb.WriteString(c.TCPTransportConfig.String())
+
+	return sb.String()
+}
+
+type ClientTransportConfig struct {
+	TCPTransportConfig
+	SocketTransportConfig
+	// Client specific settings
+	ConnectionsPerEndpoint int
+	Endpoints              []string
+	RetryCount             int
+}
+
+func (c *ClientTransportConfig) String() string {
+	var sb strings.Builder
+
+	// Endpoints
+	addSection("Endpoints", &sb)
+	for i, endpoint := range c.Endpoints {
+		addField("Server "+strconv.Itoa(i+1), endpoint, &sb)
+	}
+
+	addSection("Configuration", &sb)
+
+	addField("Connections Per Endpoint", strconv.Itoa(c.ConnectionsPerEndpoint), &sb)
+
+	addField("Retry Count", strconv.Itoa(c.RetryCount), &sb)
+
+	sb.WriteString(c.SocketTransportConfig.String())
+	sb.WriteString(c.TCPTransportConfig.String())
+
+	return sb.String()
+}
+
+// -------------------------------------------------------------
+// Helper functions
+// -------------------------------------------------------------
+
+func addSection(title string, sb *strings.Builder) {
+	sb.WriteString("\n")
+	sb.WriteString(fmt.Sprintf("%s\n", strings.ToUpper(title)))
+}
+
+func addField(name, value string, sb *strings.Builder) {
+	sb.WriteString(fmt.Sprintf("  %-22s: %s\n", name, value))
 }

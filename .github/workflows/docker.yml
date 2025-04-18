@@ -1,0 +1,51 @@
+# Docker Image Build and Push Workflow
+#
+# This workflow builds and pushes Docker images to GitHub Container Registry (ghcr.io) with different tags:
+# - For tag pushes (releases): Creates two tags - the release version (without 'v' prefix) and 'latest'
+# - For branch pushes (development): Creates a development tag with short commit SHA
+#
+# The workflow is triggered on:
+# - Push to 'main' branch (creates development image)
+# - Push of version tags starting with 'v' (creates release image)
+
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set Docker Tag
+        id: set-tag
+        run: |
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "DOCKER_TAGS=ghcr.io/valentinkolb/dkv:latest,ghcr.io/valentinkolb/dkv:${VERSION}" >> $GITHUB_ENV
+          else
+            SHA=$(git rev-parse --short HEAD)
+            echo "DOCKER_TAGS=ghcr.io/valentinkolb/dkv:dev-${SHA}" >> $GITHUB_ENV
+          fi
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ env.DOCKER_TAGS }}

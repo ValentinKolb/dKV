@@ -56,14 +56,32 @@ func WrapString(text string) string {
 
 // SetupRPCClientFlags adds common RPC connection flags to a command
 func SetupRPCClientFlags(cmd *cobra.Command) {
-	key := "endpoints"
-	cmd.PersistentFlags().String(key, "http://localhost:8080", WrapString("The address of the dKV server. For transports that support load balancing, multiple endpoints can be specified as a comma-separated list"))
-	key = "conn-per-endpoint"
-	cmd.PersistentFlags().Int(key, 1, WrapString("Simultaneous connections per endpoint - for transports that support this feature"))
-	key = "timeout"
+	key := "timeout"
 	cmd.PersistentFlags().Int(key, 10, WrapString("The timeout in seconds of the client"))
-	key = "retries"
+
+	key = "transport-endpoints"
+	cmd.PersistentFlags().String(key, "http://localhost:8080", WrapString("The address of the dKV server. For transports that support load balancing, multiple endpoints can be specified as a comma-separated list"))
+
+	key = "transport-conn-per-endpoint"
+	cmd.PersistentFlags().Int(key, 1, WrapString("Simultaneous connections per endpoint - for transports that support this feature"))
+
+	key = "transport-retries"
 	cmd.PersistentFlags().Int(key, 3, WrapString("How many times to retry the request"))
+
+	key = "transport-write-buffer"
+	cmd.PersistentFlags().Int(key, 512, WrapString("The size of the write buffer for the transport (in KB, ignored for http)"))
+
+	key = "transport-read-buffer"
+	cmd.PersistentFlags().Int(key, 512, WrapString("The size of the read buffer for the transport (in KB, ignored for http)"))
+
+	key = "transport-tcp-nodelay"
+	cmd.PersistentFlags().Bool(key, true, WrapString("Whether to enable TCP_NODELAY for the transport (only for TCP)"))
+
+	key = "transport-tcp-keepalive"
+	cmd.PersistentFlags().Int(key, 0, WrapString("The keepalive interval for the transport (in seconds, only for TCP)"))
+
+	key = "transport-tcp-linger"
+	cmd.PersistentFlags().Int(key, 0, WrapString("The linger time for the transport (in seconds, only for TCP)"))
 }
 
 // InitClientConfig initializes configuration from environment variables
@@ -80,15 +98,23 @@ func InitClientConfig() {
 
 // GetClientConfig reads client configuration from viper
 func GetClientConfig() *common.ClientConfig {
-	conf := &common.ClientConfig{}
-
-	// read the configuration
-	conf.TimeoutSecond = viper.GetInt("timeout")
-	conf.RetryCount = viper.GetInt("retries")
-	conf.ConnectionsPerEndpoint = viper.GetInt("conn-per-endpoint")
-
-	// parse the endpoints (comma separated list)
-	conf.Endpoints = strings.Split(viper.GetString("endpoints"), ",")
+	conf := &common.ClientConfig{
+		TimeoutSecond: viper.GetInt("timeout"),
+		Transport: common.ClientTransportConfig{
+			RetryCount:             viper.GetInt("transport-retries"),
+			Endpoints:              strings.Split(viper.GetString("transport-endpoints"), ","),
+			ConnectionsPerEndpoint: viper.GetInt("transport-conn-per-endpoint"),
+			SocketTransportConfig: common.SocketTransportConfig{
+				WriteBufferSize: viper.GetInt("transport-write-buffer") * 1024,
+				ReadBufferSize:  viper.GetInt("transport-read-buffer") * 1024,
+			},
+			TCPTransportConfig: common.TCPTransportConfig{
+				TCPKeepAliveSec: viper.GetInt("transport-tcp-keepalive"),
+				TCPLingerSec:    viper.GetInt("transport-tcp-linger"),
+				TCPNoDelay:      viper.GetBool("transport-tcp-nodelay"),
+			},
+		},
+	}
 
 	return conf
 }

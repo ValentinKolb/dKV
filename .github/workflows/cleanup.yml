@@ -1,0 +1,49 @@
+# Cleanup Workflow for Development Docker Images
+#
+# This workflow runs on a schedule to delete old development Docker images.
+# It keeps only the most recent dev images to prevent accumulation of unused images.
+# Images tagged with version numbers (releases) are preserved.
+
+name: Cleanup Old Dev Images
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Run weekly
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Delete old dev container images
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const keepCount = 5; // Number of dev versions to keep
+            
+            const response = await github.request('GET /user/packages/container/dkv/versions', {
+              package_type: 'container',
+              package_name: 'dkv'
+            });
+            
+            // Keep track of dev versions
+            const devVersions = response.data
+              .filter(version => version.metadata.container.tags.some(tag => tag.startsWith('dev-')))
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            // Keep only the 5 most recent dev versions
+            const versionsToDelete = devVersions.slice(keepCount);
+            console.log(`Found ${devVersions.length} dev versions, keeping ${keepCount}, deleting ${versionsToDelete.length}`);
+            
+            // Delete the old dev versions
+            for (const version of versionsToDelete) {
+              console.log(`Deleting version ${version.id} (${version.metadata.container.tags.join(', ')})`);
+              await github.request('DELETE /user/packages/container/dkv/versions/{version_id}', {
+                package_type: 'container',
+                package_name: 'dkv',
+                version_id: version.id
+              });
+            }

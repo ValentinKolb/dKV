@@ -12,3 +12,4 @@ go.work
 .env.local
 temp/
 data/
+dist/
