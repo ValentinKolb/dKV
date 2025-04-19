@@ -156,6 +156,8 @@ func processConfig(cmd *cobra.Command, _ []string) error {
 
 	// read the configuration from the command line flags and environment variables
 	serveCmdConfig.RTTMillisecond = viper.GetUint64("rtt-millisecond")
+	serveCmdConfig.ElectionRTTFactor = viper.GetUint64("election-rtt-factor")
+	serveCmdConfig.HeartbeatRTTFactor = viper.GetUint64("heartbeat-rtt-factor")
 	serveCmdConfig.SnapshotEntries = viper.GetUint64("snapshot-entries")
 	serveCmdConfig.CompactionOverhead = viper.GetUint64("compaction-overhead")
 	serveCmdConfig.DataDir = viper.GetString("data-dir")
