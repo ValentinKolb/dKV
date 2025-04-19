@@ -12,16 +12,16 @@ x-dkv-common-env: &dkv-common-env
   DKV_SHARDS: "100=dstore,200=lockmgr(dstore)" # Shard configuration for the DKV server
   DKV_LOG_LEVEL: "info"    # Log verbosity level (debug, info, warn, error)
   DKV_TIMEOUT: 15          # Global timeout in seconds for various operations
-  
+
   # RAFT consensus configuration
-  DKV_RTT_MILLISECOND: 100            # Round-trip time estimate in milliseconds
+  DKV_RTT_MILLISECOND: 100            # Round-trip time estimate in milliseconds, see also DKV_ELECTION_RTT_FACTOR, DVK_HEARTBEAT_RTT_FACTOR
   DKV_SNAPSHOT_ENTRIES: 5000          # Number of log entries between snapshots
   DKV_COMPACTION_OVERHEAD: 2500       # Additional entries to keep after compaction
-  
+
   # Cluster configuration - using internal hostnames and port (63001)
   DKV_CLUSTER_MEMBERS: "node-1=dkv-node-1:63001,node-2=dkv-node-2:63001,node-3=dkv-node-3:63001"
-  
-  # RPC Server configuration  
+
+  # RPC Server configuration
   DKV_SERIALIZER: "binary"            # Serialization format for RPC messages
   DKV_TRANSPORT: "tcp"                # Transport protocol for RPC
   DKV_TRANSPORT_WORKERS: 10           # Number of workers per connection

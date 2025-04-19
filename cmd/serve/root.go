@@ -38,25 +38,31 @@ func init() {
 	ServeCmd.PersistentFlags().String(key, "100=lstore,200=lockmgr(lstore)", cmdUtil.WrapString("Comma-separated list of shards to serve. Format: ID=TYPE where TYPE is one of: dstore, lstore, lockmgr(dstore), lockmgr(lstore)"))
 
 	key = "rtt-millisecond"
-	ServeCmd.PersistentFlags().Int(key, 100, cmdUtil.WrapString("(ConfServerModeMultiNode Mode) RTTMillisecond defines the average Round Trip Time (RTT) in milliseconds between two NodeHost instances. \nOther raft configuration parameters (ElectionRTT=value/10, HeartbeatRTT=value/100) are derived from this value"))
+	ServeCmd.PersistentFlags().Int(key, 100, cmdUtil.WrapString("(Cluster only) RTTMillisecond defines the average Round Trip Time (RTT) in milliseconds between two NodeHost instances. \nOther raft configuration parameters (ElectionRTT=value/10, HeartbeatRTT=value/100) are derived from this value"))
+
+	key = "election-rtt-factor"
+	ServeCmd.PersistentFlags().Int(key, 10, cmdUtil.WrapString("(Cluster only) ElectionRTTFactor defines the minimum number of RTTMillisecond between elections, will be calculated as RTTMillisecond * ElectionRTTFactor - one magnitude larger than RTTMillisecond is recommended"))
+
+	key = "heartbeat-rtt-factor"
+	ServeCmd.PersistentFlags().Int(key, 2, cmdUtil.WrapString("(Cluster only) HeartbeatRTTFactor defines the number of message RTT between heartbeats, will be calculated as RTTMillisecond * ElectionRTTFactor - should be close to RTTMillisecond"))
 
 	key = "snapshot-entries"
-	ServeCmd.PersistentFlags().Int(key, 100_000, cmdUtil.WrapString("(ConfServerModeMultiNode Mode) SnapshotEntries defines how often the state machine should be snapshotted automatically. It is defined in terms of the number of applied Raft log entries. SnapshotEntries can be set to 0 to disable such automatic snapshotting (not recommended)"))
+	ServeCmd.PersistentFlags().Int(key, 100_000, cmdUtil.WrapString("(Cluster only) SnapshotEntries defines how often the state machine should be snapshotted automatically. It is defined in terms of the number of applied Raft log entries. SnapshotEntries can be set to 0 to disable such automatic snapshotting (not recommended)"))
 
 	key = "compaction-overhead"
-	ServeCmd.PersistentFlags().Int(key, 5000, cmdUtil.WrapString("(ConfServerModeMultiNode Mode) CompactionOverhead defines the number of snapshots that should be retained in the system. When a new snapshot is generated, the system will attempt to remove older snapshots that go beyond the specified number of retained snapshots. Recommended value is about 1/2 of SnapshotEntries"))
+	ServeCmd.PersistentFlags().Int(key, 5000, cmdUtil.WrapString("(Cluster only) CompactionOverhead defines the number of snapshots that should be retained in the system. When a new snapshot is generated, the system will attempt to remove older snapshots that go beyond the specified number of retained snapshots. Recommended value is about 1/2 of SnapshotEntries"))
 
 	key = "data-dir"
-	ServeCmd.PersistentFlags().String(key, "data", cmdUtil.WrapString("(ConfServerModeMultiNode Mode) DataDir is the directory used for storing the snapshots"))
+	ServeCmd.PersistentFlags().String(key, "data", cmdUtil.WrapString("(Cluster only) DataDir is the directory used for storing the snapshots"))
 
 	key = "replica-id"
-	ServeCmd.PersistentFlags().String(key, "", cmdUtil.WrapString("(ConfServerModeMultiNode Mode) ReplicaID is the unique identifier for this NodeHost instance (e.g. 'node-1')"))
+	ServeCmd.PersistentFlags().String(key, "", cmdUtil.WrapString("(Cluster only) ReplicaID is the unique identifier for this NodeHost instance (e.g. 'node-1')"))
 
 	key = "cluster-members"
-	ServeCmd.PersistentFlags().String(key, "", cmdUtil.WrapString("(ConfServerModeMultiNode Mode) ClusterMembers is a comma-separated list of NodeHost addresses in the format 'node-1=localhost:63001,node-2=localhost:63002,...'"))
+	ServeCmd.PersistentFlags().String(key, "", cmdUtil.WrapString("(Cluster only) ClusterMembers is a comma-separated list of NodeHost addresses in the format 'node-1=localhost:63001,node-2=localhost:63002,...'"))
 
 	key = "timeout"
-	ServeCmd.PersistentFlags().Int64(key, 5, cmdUtil.WrapString("(ConfServerModeMultiNode Mode) Timeout in seconds"))
+	ServeCmd.PersistentFlags().Int64(key, 5, cmdUtil.WrapString("(Cluster only) Timeout in seconds"))
 
 	key = "buffer-pool-size"
 	ServeCmd.PersistentFlags().Int(key, 64, cmdUtil.WrapString("Pre-allocated buffer size for the server (in KB, ignored for http)"))

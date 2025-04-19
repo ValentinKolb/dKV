@@ -12,20 +12,13 @@ import (
 // helper functions for to interface with Dragonboat (for the server util)
 // --------------------------------------------------------------------------
 
-// Dragonboat uses RTT (Round Trip Time) to determine the timing of elections and heartbeats.
-// These default values are selected according to the RAFT Paper
-const (
-	electionRTTFactor  = 10
-	heartbeatRTTFactor = 1
-)
-
 // ToDragonboatConfig converts the ServerConfig to Dragonboat Config
 func (c *ServerConfig) ToDragonboatConfig(shardId uint64) config.Config {
 	return config.Config{
 		ReplicaID:          c.ReplicaID,
 		ShardID:            shardId,
-		ElectionRTT:        electionRTTFactor,  // = c.RTTMillisecond * 10
-		HeartbeatRTT:       heartbeatRTTFactor, // = c.RTTMillisecond * 2
+		ElectionRTT:        c.ElectionRTTFactor,
+		HeartbeatRTT:       c.HeartbeatRTTFactor,
 		CheckQuorum:        true,
 		SnapshotEntries:    c.SnapshotEntries,
 		CompactionOverhead: c.CompactionOverhead,
@@ -70,6 +63,8 @@ type ServerConfig struct {
 
 	// Dragenboat parameters
 	RTTMillisecond     uint64
+	ElectionRTTFactor  uint64
+	HeartbeatRTTFactor uint64
 	SnapshotEntries    uint64
 	CompactionOverhead uint64
 	DataDir            string
@@ -125,9 +120,9 @@ func (c *ServerConfig) String() string {
 
 		// RAFT parameters
 		addSection("RAFT Parameters", &sb)
-		addField("Round Trip Time (ms)", fmt.Sprintf("%d ms", c.RTTMillisecond), &sb)
-		addField("Election RTT (ms)", fmt.Sprintf("%d", c.RTTMillisecond*electionRTTFactor), &sb)
-		addField("Heartbeat RTT (ms)", fmt.Sprintf("%d", c.RTTMillisecond*heartbeatRTTFactor), &sb)
+		addField("Avg Round Trip Time", fmt.Sprintf("%d ms", c.RTTMillisecond), &sb)
+		addField("Election RTT", fmt.Sprintf("%d ms", c.RTTMillisecond*c.ElectionRTTFactor), &sb)
+		addField("Heartbeat RTT", fmt.Sprintf("%d ms", c.RTTMillisecond*c.HeartbeatRTTFactor), &sb)
 		addField("Check Quorum", fmt.Sprintf("%t", true), &sb)
 		addField("Snapshot Entries", fmt.Sprintf("%d", c.SnapshotEntries), &sb)
 		addField("Compaction Overhead", fmt.Sprintf("%d", c.CompactionOverhead), &sb)
