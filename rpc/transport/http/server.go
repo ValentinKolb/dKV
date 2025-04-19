@@ -36,7 +36,11 @@ func (t *httpServerTransport) Listen(config common.ServerConfig) error {
 	mux := http.NewServeMux()
 
 	// Register handler
-	mux.HandleFunc("POST /{shardId}", loggerMiddleware(t.handleRequest))
+	if t.config.LogLevel == "debug" {
+		mux.HandleFunc("POST /{shardId}", loggerMiddleware(t.handleRequest))
+	} else {
+		mux.HandleFunc("POST /{shardId}", t.handleRequest)
+	}
 
 	// Get address from util
 	Logger.Infof("Starting HTTP server on %s", t.config.Transport.Endpoint)
@@ -100,7 +104,7 @@ func (rw *responseWriter) writeHeader(code int) {
 
 // loggerMiddleware is a middleware that logs HTTP requests
 func loggerMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
 		// Create custom response writer to capture status code
@@ -115,5 +119,5 @@ func loggerMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		// Log the request
 		duration := time.Since(start)
 		Logger.Debugf("%s %s => %d took %s", r.Method, r.URL.Path, rw.statusCode, duration)
-	})
+	}
 }
