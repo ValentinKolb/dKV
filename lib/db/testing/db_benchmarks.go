@@ -79,8 +79,8 @@ func benchmarkSet(b *testing.B, database db.KVDB) {
 	b.RunParallel(func(pb *testing.PB) {
 		counter := 0
 		for pb.Next() {
-			key := fmt.Sprintf("bench-key-%d", counter)
-			value := []byte(fmt.Sprintf("bench-value-%d", counter))
+			key := fmt.Sprintf("test-key-%d", counter)
+			value := []byte(fmt.Sprintf("test-value-%d", counter))
 			database.Set(key, value, 0)
 			counter++
 		}
@@ -99,8 +99,8 @@ func benchmarkSetExisting(b *testing.B, database db.KVDB) {
 	// Prepare data
 	numKeys := b.N
 	for i := 0; i < numKeys; i++ {
-		key := fmt.Sprintf("bench-key-%d", i)
-		value := []byte(fmt.Sprintf("bench-value-%d", i))
+		key := fmt.Sprintf("test-key-%d", i)
+		value := []byte(fmt.Sprintf("test-value-%d", i))
 		database.Set(key, value, 0)
 	}
 
@@ -108,8 +108,8 @@ func benchmarkSetExisting(b *testing.B, database db.KVDB) {
 	b.RunParallel(func(pb *testing.PB) {
 		counter := 0
 		for pb.Next() {
-			key := fmt.Sprintf("bench-key-%d", counter%numKeys)
-			value := []byte(fmt.Sprintf("bench-value-%d", counter))
+			key := fmt.Sprintf("test-key-%d", counter%numKeys)
+			value := []byte(fmt.Sprintf("test-value-%d", counter))
 			database.Set(key, value, 0)
 			counter++
 		}
@@ -129,7 +129,7 @@ func benchmarkSetLargeValue(b *testing.B, database db.KVDB) {
 	b.RunParallel(func(pb *testing.PB) {
 		counter := 0
 		for pb.Next() {
-			key := fmt.Sprintf("bench-key-%d", counter)
+			key := fmt.Sprintf("test-key-%d", counter)
 			largeValue := make([]byte, 1*1024*1024) // 1MB
 			database.Set(key, largeValue, 0)
 			counter++
@@ -150,8 +150,8 @@ func benchmarkGet(b *testing.B, database db.KVDB) {
 	// Prepare data
 	numKeys := 10000
 	for i := 0; i < numKeys; i++ {
-		key := fmt.Sprintf("bench-key-%d", i)
-		value := []byte(fmt.Sprintf("bench-value-%d", i))
+		key := fmt.Sprintf("test-key-%d", i)
+		value := []byte(fmt.Sprintf("test-value-%d", i))
 		database.Set(key, value, 0)
 	}
 
@@ -159,7 +159,7 @@ func benchmarkGet(b *testing.B, database db.KVDB) {
 	b.RunParallel(func(pb *testing.PB) {
 		counter := 0
 		for pb.Next() {
-			key := fmt.Sprintf("bench-key-%d", counter%numKeys)
+			key := fmt.Sprintf("test-key-%d", counter%numKeys)
 			database.Get(key)
 			counter++
 		}
@@ -184,8 +184,8 @@ func benchmarkDelete(b *testing.B, database db.KVDB) {
 	// Prepare data
 	keys := make([]string, numKeys)
 	for i := 0; i < numKeys; i++ {
-		keys[i] = fmt.Sprintf("bench-key-%d", i)
-		value := []byte(fmt.Sprintf("bench-value-%d", i))
+		keys[i] = fmt.Sprintf("test-key-%d", i)
+		value := []byte(fmt.Sprintf("test-value-%d", i))
 		database.Set(keys[i], value, 0)
 	}
 
@@ -213,7 +213,7 @@ func benchmarkHasNot(b *testing.B, database db.KVDB) {
 
 	// Prepare data
 	requireFeature(b, database, db.FeatureHas)
-	const key = "bench-key"
+	const key = "test-key"
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -236,8 +236,8 @@ func benchmarkHas(b *testing.B, database db.KVDB) {
 	// Prepare data
 	numKeys := 10000
 	for i := 0; i < numKeys; i++ {
-		key := fmt.Sprintf("bench-key-%d", i)
-		value := []byte(fmt.Sprintf("bench-value-%d", i))
+		key := fmt.Sprintf("test-key-%d", i)
+		value := []byte(fmt.Sprintf("test-value-%d", i))
 		database.Set(key, value, 0)
 	}
 
@@ -245,7 +245,7 @@ func benchmarkHas(b *testing.B, database db.KVDB) {
 	b.RunParallel(func(pb *testing.PB) {
 		counter := 0
 		for pb.Next() {
-			key := fmt.Sprintf("bench-key-%d", counter%numKeys)
+			key := fmt.Sprintf("test-key-%d", counter%numKeys)
 			database.Has(key)
 			counter++
 		}
@@ -270,8 +270,8 @@ func benchmarkSaveLoad(b *testing.B, factory DBFactory) {
 	// Create a database with some data
 	numEntries := 10000
 	for i := 0; i < numEntries; i++ {
-		key := fmt.Sprintf("bench-key-%d", i)
-		value := []byte(fmt.Sprintf("bench-value-%d", i))
+		key := fmt.Sprintf("test-key-%d", i)
+		value := []byte(fmt.Sprintf("test-value-%d", i))
 		database.Set(key, value, 0)
 	}
 
@@ -318,8 +318,8 @@ func benchmarkMixedUsage(b *testing.B, database db.KVDB) {
 	// Prepare initial data
 	keys := make([]string, numKeys)
 	for i := 0; i < numKeys; i++ {
-		keys[i] = fmt.Sprintf("bench-key-%d", i)
-		value := []byte(fmt.Sprintf("bench-value-%d", i))
+		keys[i] = fmt.Sprintf("test-key-%d", i)
+		value := []byte(fmt.Sprintf("test-value-%d", i))
 		database.Set(keys[i], value, 0)
 	}
 
@@ -377,8 +377,8 @@ func benchmarkSetWithExpiry(b *testing.B, database db.KVDB) {
 		currentIndex := uint64(0)
 		//for i := 0; i < 1_0_000; i++ {
 		for pb.Next() {
-			key := fmt.Sprintf("bench-expiry-key-%d", currentIndex)
-			value := []byte(fmt.Sprintf("bench-expiry-value-%d", currentIndex))
+			key := fmt.Sprintf("test-expiry-key-%d", currentIndex)
+			value := []byte(fmt.Sprintf("test-expiry-value-%d", currentIndex))
 			database.SetE(key, value, currentIndex, currentIndex+1, currentIndex+2)
 			currentIndex++
 		}
@@ -399,8 +399,8 @@ func benchmarkGetWithExpiry(b *testing.B, database db.KVDB) {
 	baseIndex := uint64(1000)
 
 	for i := 0; i < numKeys; i++ {
-		key := fmt.Sprintf("bench-expiry-key-%d", i)
-		value := []byte(fmt.Sprintf("bench-expiry-value-%d", i))
+		key := fmt.Sprintf("test-expiry-key-%d", i)
+		value := []byte(fmt.Sprintf("test-expiry-value-%d", i))
 		ttl := uint64(0)
 
 		// 50% of keys get a TTL
@@ -418,7 +418,7 @@ func benchmarkGetWithExpiry(b *testing.B, database db.KVDB) {
 	b.RunParallel(func(pb *testing.PB) {
 		counter := 0
 		for pb.Next() {
-			key := fmt.Sprintf("bench-expiry-key-%d", counter%numKeys)
+			key := fmt.Sprintf("test-expiry-key-%d", counter%numKeys)
 			database.SetWriteIdx(currentIndex)
 			database.Get(key)
 			counter++
@@ -440,8 +440,8 @@ func benchmarkMixedOperationsWithExpiry(b *testing.B, database db.KVDB) {
 	baseIndex := uint64(1000)
 
 	for i := 0; i < numKeys; i++ {
-		key := fmt.Sprintf("bench-mixed-key-%d", i)
-		value := []byte(fmt.Sprintf("bench-mixed-value-%d", i))
+		key := fmt.Sprintf("test-mixed-key-%d", i)
+		value := []byte(fmt.Sprintf("test-mixed-value-%d", i))
 		ttl := uint64(i % 2000) // Various TTLs
 		database.SetE(key, value, baseIndex, 0, ttl)
 	}
@@ -453,7 +453,7 @@ func benchmarkMixedOperationsWithExpiry(b *testing.B, database db.KVDB) {
 
 		for pb.Next() {
 			// Random operation: 70% Get, 30% Set
-			key := fmt.Sprintf("bench-mixed-key-%d", counter%numKeys)
+			key := fmt.Sprintf("test-mixed-key-%d", counter%numKeys)
 			currentIndex := baseIndex + uint64(counter)
 
 			if rnd.Float32() < .7 {
@@ -461,7 +461,7 @@ func benchmarkMixedOperationsWithExpiry(b *testing.B, database db.KVDB) {
 				database.Get(key)
 			} else {
 				// Set operation with TTL
-				value := []byte(fmt.Sprintf("bench-mixed-updated-value-%d", counter))
+				value := []byte(fmt.Sprintf("test-mixed-updated-value-%d", counter))
 				ttl := uint64(rnd.Intn(1000))
 				database.SetE(key, value, currentIndex, 0, ttl)
 			}

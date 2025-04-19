@@ -25,4 +25,5 @@ ENV DKV_DATA_DIR="/app/data"
 ENV DKV_TRANSPORT_ENDPOINT=":8080"
 EXPOSE 8080
 
-ENTRYPOINT ["/app/dkv", "serve"]
+ENTRYPOINT ["/app/dkv"]
+CMD ["serve"]

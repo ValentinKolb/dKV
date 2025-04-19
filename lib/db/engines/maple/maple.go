@@ -298,12 +298,7 @@ func (maple *mapleImpl) Expire(key string, writeIndex uint64) {
 // Thread-safety: This method is thread-safe and can be called concurrently.
 func (maple *mapleImpl) Delete(key string, writeIndex uint64) {
 	maple.compute(key, nil, writeIndex, 0, 0, func(_, old internal.Entry, loaded bool) (entry internal.Entry, delete bool) {
-		if !loaded {
-			return old, true // set delete to true because else the value will be created
-		}
-		old.DeleteAt = writeIndex
-
-		return old, false
+		return old, true
 	})
 }
 
