@@ -1,0 +1,71 @@
+# Common env variables for all nodes
+x-dkv-common-env: &dkv-common-env
+  # Go runtime configuration
+  GOGC: 80                # Garbage collection aggressiveness (0-100) - lower values use more memory but less CPU
+  GOMEMLIMIT: "64GiB"
+  GOMAXPROCS: 48
+
+  # Transport and serialization settings
+  DKV_SERIALIZER: "binary"
+  DKV_TRANSPORT: "unix"
+  DKV_TIMEOUT: 15
+
+  # Client specific configuration
+  DKV_TRANSPORT_ENDPOINTS: "/mnt/unix.sock"
+  DKV_TRANSPORT_CONN_PER_ENDPOINT: 100
+  DKV_THREADS: 100
+  DKV_LARGE_VALUE_SIZE: 256
+
+  # Server specific configuration
+  DKV_LOG_LEVEL: "info"
+  DKV_TRANSPORT_WORKERS: 100
+
+networks:
+  dkv-network:
+    driver: bridge
+
+volumes:
+  socket-volume:  # Shared volume for the socket
+
+services:
+  dkv-client-1:
+    image: ghcr.io/valentinkolb/dkv:latest
+    command: "sh -c 'sleep 5 && /app/dkv kv perf --csv=/app/benchmarks/1-transport=$${DKV_TRANSPORT}_serializer=$${DKV_SERIALIZER}_server_workers=$${DKV_TRANSPORT_WORKERS}_client_threads=$${DKV_THREADS}_client_conn_per_endpoint=$${DKV_TRANSPORT_CONN_PER_ENDPOINT}.csv'"
+    entrypoint: []
+    environment:
+      <<: *dkv-common-env
+    networks:
+      - dkv-network
+    depends_on:
+      dkv-server:
+        condition: service_started
+    volumes:
+      - socket-volume:/mnt
+      - ./benchmarks:/app/benchmarks
+
+  dkv-client-2:
+    image: ghcr.io/valentinkolb/dkv:latest
+    command: "sh -c 'sleep 5 && /app/dkv kv perf --csv=/app/benchmarks/2-transport=$${DKV_TRANSPORT}_serializer=$${DKV_SERIALIZER}_server_workers=$${DKV_TRANSPORT_WORKERS}_client_threads=$${DKV_THREADS}_client_conn_per_endpoint=$${DKV_TRANSPORT_CONN_PER_ENDPOINT}.csv'"
+    entrypoint: [ ]
+    environment:
+      <<: *dkv-common-env
+    networks:
+      - dkv-network
+    depends_on:
+      dkv-server:
+        condition: service_started
+    volumes:
+      - socket-volume:/mnt
+      - ./benchmarks:/app/benchmarks
+
+  dkv-server:
+    image: ghcr.io/valentinkolb/dkv:latest
+    restart: no
+    environment:
+      <<: *dkv-common-env
+      SHARDS: "100=lstore"
+      DKV_TRANSPORT_ENDPOINT: "/mnt/unix.sock"
+    networks:
+      - dkv-network
+    volumes:
+      - socket-volume:/mnt

@@ -1,0 +1,44 @@
+# Common env variables for all nodes
+x-dkv-common-env: &dkv-common-env
+  # Transport and serialization settings
+  DKV_SERIALIZER: "gob"
+  DKV_TRANSPORT: "unix"
+
+networks:
+  dkv-network:
+    driver: bridge
+
+volumes:
+  socket-volume:  # Shared volume for the socket
+
+services:
+  dkv-client:
+    image: ghcr.io/valentinkolb/dkv:latest
+    command: sh -c "sleep 5 && /app/dkv kv test"
+    entrypoint: []
+    environment:
+      <<: *dkv-common-env
+      DKV_TRANSPORT_ENDPOINTS: "/mnt/unix.sock"
+    networks:
+      - dkv-network
+    depends_on:
+      dkv-server:
+        condition: service_started
+    volumes:
+      - socket-volume:/mnt
+
+  dkv-server:
+    image: ghcr.io/valentinkolb/dkv:latest
+    restart: no
+    environment:
+      <<: *dkv-common-env
+      SHARDS: "100=lstore"
+      DKV_TRANSPORT_ENDPOINT: "/mnt/unix.sock"
+
+      # server specific configuration
+      DKV_LOG_LEVEL: "info"
+      DKV_TIMEOUT: 15
+    networks:
+      - dkv-network
+    volumes:
+      - socket-volume:/mnt

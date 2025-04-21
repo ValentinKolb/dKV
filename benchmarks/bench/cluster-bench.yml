@@ -1,0 +1,95 @@
+# Common env variables for all nodes
+x-dkv-common-env: &dkv-common-env
+  # Go runtime configuration
+  GOGC: 80
+  GOMEMLIMIT: "64GiB" # Actual usage is around 2GiB, but a larger value here greatly improves performance
+  GOMAXPROCS: 48
+
+  DKV_TIMEOUT: 15
+
+  # Server specific configuration
+  DKV_SHARDS: "100=dstore"
+  DKV_LOG_LEVEL: "info"
+
+  # RAFT consensus configuration
+  DKV_RTT_MILLISECOND: 100 # Higher value leads to much improved stability, with minimal performance impact
+  DKV_ELECTION_RTT_FACTOR: 10
+  DVK_HEARTBEAT_RTT_FACTOR: 2
+  DKV_SNAPSHOT_ENTRIES: 100000
+  DKV_COMPACTION_OVERHEAD: 50000
+  DKV_CLUSTER_MEMBERS: "node-1=dkv-node-1:63001,node-2=dkv-node-2:63001,node-3=dkv-node-3:63001"
+
+  # RPC configuration (client an server)
+  DKV_SERIALIZER: "binary"
+  DKV_TRANSPORT: "tcp"
+  DKV_TRANSPORT_WORKERS: 50
+  DKV_TRANSPORT_WRITE_BUFFER: 512
+  DKV_TRANSPORT_READ_BUFFER: 512
+  DKV_TRANSPORT_TCP_NODELAY: "true"
+  DKV_TRANSPORT_TCP_KEEP_ALIVE: 60
+  DKV_TRANSPORT_TCP_LINGER: 10
+
+  # Client settings
+  DKV_TRANSPORT_ENDPOINTS: "dkv-node-1:8080,dkv-node-2:8080,dkv-node-3:8080"
+  DKV_TRANSPORT_CONN_PER_ENDPOINT: 10
+  DKV_THREADS: 50
+
+services:
+  dkv-client:
+    image: ghcr.io/valentinkolb/dkv:latest
+    command: "sh -c 'sleep 5 && /app/dkv kv perf'"
+    entrypoint: [ ]
+    environment:
+      <<: *dkv-common-env
+    networks:
+      - dkv-network
+    depends_on:
+      dkv-node-1:
+        condition: service_started
+
+  dkv-node-1:
+    image: ghcr.io/valentinkolb/dkv:latest
+    container_name: dkv-node-1
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      <<: *dkv-common-env
+      DKV_REPLICA_ID: "node-1"
+    # volumes:                  # No persistent storage for bench testing, raft still writes to disk but the log won't survive a restart
+    networks:
+      - dkv-network
+      - raft-network
+
+  dkv-node-2:
+    image: ghcr.io/valentinkolb/dkv:latest
+    container_name: dkv-node-2
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    environment:
+      <<: *dkv-common-env
+      DKV_REPLICA_ID: "node-2"
+    networks:
+      - dkv-network
+      - raft-network
+
+  dkv-node-3:
+    image: ghcr.io/valentinkolb/dkv:latest
+    container_name: dkv-node-3
+    restart: unless-stopped
+    ports:
+      - "8083:8080"
+    environment:
+      <<: *dkv-common-env
+      DKV_REPLICA_ID: "node-3"
+    networks:
+      - dkv-network
+      - raft-network
+
+networks:
+  dkv-network:
+    driver: bridge # Standard bridge network for rpc communications
+  raft-network:
+    driver: bridge
+    internal: true # Internal network that's not accessible from the host

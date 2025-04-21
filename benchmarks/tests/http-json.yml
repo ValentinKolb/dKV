@@ -1,0 +1,36 @@
+# Common env variables for all nodes
+x-dkv-common-env: &dkv-common-env
+  # Transport and serialization settings
+  DKV_SERIALIZER: "json"
+  DKV_TRANSPORT: "http"
+
+networks:
+  dkv-network:
+    driver: bridge
+
+services:
+  dkv-client:
+    image: ghcr.io/valentinkolb/dkv:latest
+    command: sh -c "sleep 1 && /app/dkv kv test"
+    entrypoint: []
+    environment:
+      <<: *dkv-common-env
+      DKV_TRANSPORT_ENDPOINTS: "http://dkv-server:8080"
+    networks:
+      - dkv-network
+    depends_on:
+      dkv-server:
+        condition: service_started
+
+  dkv-server:
+    image: ghcr.io/valentinkolb/dkv:latest
+    restart: no
+    environment:
+      <<: *dkv-common-env
+      SHARDS: "100=lstore"
+
+      # server specific configuration
+      DKV_LOG_LEVEL: "info"
+      DKV_TIMEOUT: 15
+    networks:
+      - dkv-network

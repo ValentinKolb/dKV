@@ -1,0 +1,53 @@
+# Common env variables for all nodes
+x-dkv-common-env: &dkv-common-env
+  # Go runtime configuration
+  GOGC: 80                # Garbage collection aggressiveness (0-100) - lower values use more memory but less CPU
+  GOMEMLIMIT: "64GiB"
+  GOMAXPROCS: 48
+
+  DKV_TIMEOUT: 15
+
+  # DKV specific configuration
+  DKV_SHARDS: "100=lstore"
+  DKV_LOG_LEVEL: "info"
+
+  # RPC configuration (client an server)
+  DKV_SERIALIZER: "binary"
+  DKV_TRANSPORT: "tcp"
+  DKV_TRANSPORT_WORKERS: 50
+  DKV_TRANSPORT_WRITE_BUFFER: 512
+  DKV_TRANSPORT_READ_BUFFER: 512
+  DKV_TRANSPORT_TCP_NODELAY: true
+  DKV_TRANSPORT_TCP_KEEP_ALIVE: 60
+  DKV_TRANSPORT_TCP_LINGER: 10
+
+  # Client settings
+  DKV_TRANSPORT_ENDPOINTS: "dkv-server:8080"
+  DKV_TRANSPORT_CONN_PER_ENDPOINT: 40
+  DKV_THREADS: 50
+
+networks:
+  dkv-network:
+    driver: bridge
+
+services:
+  dkv-client:
+    image: ghcr.io/valentinkolb/dkv:latest
+    command: "sh -c 'sleep 5 && /app/dkv kv perf'"
+    entrypoint: [ ]
+    environment:
+      <<: *dkv-common-env
+    networks:
+      - dkv-network
+    depends_on:
+      dkv-server:
+        condition: service_started
+
+
+  dkv-server:
+    image: ghcr.io/valentinkolb/dkv:latest
+    restart: no
+    environment:
+      <<: *dkv-common-env
+    networks:
+      - dkv-network

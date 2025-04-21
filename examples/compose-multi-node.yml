@@ -14,9 +14,11 @@ x-dkv-common-env: &dkv-common-env
   DKV_TIMEOUT: 15          # Global timeout in seconds for various operations
 
   # RAFT consensus configuration
-  DKV_RTT_MILLISECOND: 100            # Round-trip time estimate in milliseconds, see also DKV_ELECTION_RTT_FACTOR, DVK_HEARTBEAT_RTT_FACTOR
-  DKV_SNAPSHOT_ENTRIES: 5000          # Number of log entries between snapshots
-  DKV_COMPACTION_OVERHEAD: 2500       # Additional entries to keep after compaction
+  DKV_RTT_MILLISECOND: 100            # Round-trip time estimate in milliseconds
+  DKV_ELECTION_RTT_FACTOR: 10         # Factor to calculate the election timeout, is multiplied by DKV_RTT_MILLISECOND
+  DVK_HEARTBEAT_RTT_FACTOR: 2         # Factor to calculate the heartbeat timeout, is multiplied by DKV_RTT_MILLISECOND
+  DKV_SNAPSHOT_ENTRIES: 100000        # Number of log entries between snapshots
+  DKV_COMPACTION_OVERHEAD: 50000      # Additional entries to keep after compaction
 
   # Cluster configuration - using internal hostnames and port (63001)
   DKV_CLUSTER_MEMBERS: "node-1=dkv-node-1:63001,node-2=dkv-node-2:63001,node-3=dkv-node-3:63001"

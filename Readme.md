@@ -53,7 +53,7 @@ It is recommended to use docker to deploy the server. The following command star
 ```bash
 export DKV_TIMEOUT=10 # Set config values for the server as env vars 
 
-docker run -p 8080:8080 ghcr.io/valentinkolb/dkv:latest --transport-workers=100 # <- set dkv config flags here
+bench run -p 8080:8080 ghcr.io/valentinkolb/dkv:latest --transport-workers=100 # <- set dkv config flags here
 ```
 
 Multiple example docker compose files are provided:
@@ -91,8 +91,9 @@ DKV_LOG_LEVEL=debug
 
 ## Benchmarks
 
-Work in progress. The library is designed for high throughput and low latency,
-specific benchmarks will be added in future commits.
+![bench](./benchmarks/assets/cluster.png)
+
+For full detail see [here](https://github.com/ValentinKolb/dKV/tree/main/benchmarks).
 
 ## Architecture Overview
 
