@@ -3,6 +3,8 @@
 *A distributed, consistent key-value store library written in Go,
 leveraging RAFT consensus for linearizability and fault tolerance.*
 
+![Logo](./assets/Logo.png)
+
 ## Features
 
 - **High Performance**: Optimized concurrent in-memory storage with sharding and lock-free data structures
@@ -91,7 +93,7 @@ DKV_LOG_LEVEL=debug
 
 ## Benchmarks
 
-![bench](./benchmarks/assets/cluster.png)
+![bench](./benchmarks/assets/dkv-cluster-analysis.png)
 
 For full detail see [here](https://github.com/ValentinKolb/dKV/tree/main/benchmarks).
 

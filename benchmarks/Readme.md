@@ -45,7 +45,7 @@ To report the memory of running containers, this [script](./report_container_mem
 docker compose -f cluster-bench.yml up --abort-on-container-exit --remove-orphans --force-recreate
 ```
 
-![Cluster Benchmarks](./assets/cluster.png)
+![Cluster Benchmarks](./assets/dkv-cluster-analysis.png)
 
 ### Test group 1: Client Threads 50, Server Workers per Connection 50
 
@@ -169,7 +169,7 @@ go run etcdBench/main.go --threads=50
 
 ### DKV vs ETCD Performance Comparison
 
-![DKV vs ETCD](./assets/dkv_vs_etcd.png)
+![DKV vs ETCD](./assets/dkv-etcd-analysis.png)
 
 Note: The compared dkv three-node benchmarks used for both client thread counts 10 server workers per connection
 and 10 connections per server.
@@ -202,7 +202,7 @@ and 10 connections per server.
 
 ## dkv single node
 
-![DKV vs ETCD](./assets/cluster_vs_single.png)
+![DKV vs ETCD](./assets/dkv-cluster-single-node.png)
 
 Teh single node benchmark is defined here: [docker compose](./bench/single-bench.yml)
 
@@ -251,6 +251,7 @@ of the two smaller clients.
 | has       | 559,597 ops/sec | 483,793 ops/sec | 1,043,390 ops/sec   | 785,546 ops/sec      | -24%       |
 | has-not   | 471,921 ops/sec | 502,513 ops/sec | 974,434 ops/sec     | 785,546 ops/sec      | -19%       |
 | mixed     | 539,084 ops/sec | 523,988 ops/sec | 1,063,072 ops/sec   | 764,526 ops/sec      | -28%       |
+
 
 For operations with larger payloads (large-set), the single client achieves nearly equivalent performance
 compared to multiple clients, suggesting that these operations are more constrained by other factors than
