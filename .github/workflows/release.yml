@@ -6,7 +6,7 @@
 # The workflow is triggered only when pushing version tags (v*).
 # Binaries are automatically uploaded to GitHub Releases page with checksums.
 
-name: Release Binaries
+name: Releases
 
 on:
   push:

@@ -1,18 +1,27 @@
-# Distributed Key-Value Store in Go (dKV)
-
-*A distributed, consistent key-value store library written in Go,
-leveraging RAFT consensus for linearizability and fault tolerance.*
-
 ![Logo](./assets/Logo.png)
 
-## Features
+**dKV** is a distributed, consistent key-value store library written in Go, leveraging RAFT consensus for
+linearizability and fault tolerance. Features include high performance, strong consistency, flexible deployment,
+time-based operations, distributed locking, and modular architecture.
 
-- **High Performance**: Optimized concurrent in-memory storage with sharding and lock-free data structures
-- **Strong Consistency**: Linearizable operations across distributed nodes using RAFT consensus
-- **Flexible Deployment**: Use as a single-node local store or a multi-node distributed cluster
-- **Time-Based Operations**: Automatic expiration and deletion of entries with configurable TTLs
-- **Distributed Locking**: Built-in distributed mutex functionality with ownership verification
-- **Modular Architecture**: Clearly defined interfaces for each layer enabling custom implementations
+[![Go Report Card](https://goreportcard.com/badge/github.com/ValentinKolb/dKV)](https://goreportcard.com/report/github.com/ValentinKolb/dKV)
+[![GoDoc](https://pkg.go.dev/badge/github.com/ValentinKolb/dKV.svg)](https://pkg.go.dev/github.com/ValentinKolb/dKV)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Build Status](https://github.com/ValentinKolb/dKV/actions/workflows/docker.yml/badge.svg)](https://github.com/ValentinKolb/dKV/actions/workflows/docker.yml)
+[![Docker Image](https://img.shields.io/badge/docker-ready-blue.svg)](https://hub.docker.com/r/yourusername/yourimage)
+[![Build Status](https://github.com/ValentinKolb/dKV/actions/workflows/release.yml/badge.svg)](https://github.com/ValentinKolb/dKV/actions/release/docker.yml)
+[![Latest Release](https://img.shields.io/github/v/release/ValentinKolb/dKV)](https://github.com/ValentinKolb/dKV/releases)
+[![Benchmarks](https://img.shields.io/badge/Benchmarks-blue?logo=readme&logoColor=green)](https://github.com/ValentinKolb/dKV/tree/main/benchmarks)
+
+---
+
+. **[Quick Start](#quick-start)** . **[Configuration](#configuration)** . **[Benchmarks](#benchmarks)** .
+**[Architecture Overview](#architecture-overview)** . **[Detailed Usage](#detailed-usage)** .
+**[License](#license)** . **[Acknowledgments](#acknowledgments)** .
+
+---
+
+:warning: This project is in early development and not yet production-ready. Use at your own risk.
 
 ## Quick Start
 
@@ -447,3 +456,4 @@ Distributed under the MIT License. See `LICENSE` for details.
 - This library is part of my Bachelor Thesis at the University of Ulm.
 - [Dragonboat](https://github.com/lni/dragonboat): RAFT consensus implementation.
 - [xsync](https://github.com/puzpuzpuz/xsync): High-performance concurrent data structures for Go.
+- The dKV logo uses the original Gopher design created by [Renee French](https://github.com/keygx/Go-gopher-Vector)

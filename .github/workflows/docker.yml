@@ -8,7 +8,7 @@
 # - Push to 'main' branch (creates development image)
 # - Push of version tags starting with 'v' (creates release image)
 
-name: Build and Push Docker Image
+name: Docker
 
 on:
   push:
