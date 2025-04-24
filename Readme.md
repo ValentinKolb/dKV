@@ -10,7 +10,6 @@ time-based operations, distributed locking, and modular architecture.
 [![Build Status](https://github.com/ValentinKolb/dKV/actions/workflows/docker.yml/badge.svg)](https://github.com/ValentinKolb/dKV/actions/workflows/docker.yml)
 [![Build Status](https://github.com/ValentinKolb/dKV/actions/workflows/release.yml/badge.svg)](https://github.com/ValentinKolb/dKV/actions/release/docker.yml)
 [![Latest Release](https://img.shields.io/github/v/release/ValentinKolb/dKV)](https://github.com/ValentinKolb/dKV/releases)
-[![Benchmarks](https://img.shields.io/badge/Benchmarks-blue?logo=readme&logoColor=green)](https://github.com/ValentinKolb/dKV/tree/main/benchmarks)
 
 ---
 

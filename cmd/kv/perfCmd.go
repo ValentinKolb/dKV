@@ -194,7 +194,7 @@ func run(_ *cobra.Command, _ []string) error {
 		})
 	})
 	results["set-large"] = setLargeValueResult
-	printResult("large-set", setLargeValueResult)
+	printResult("set-large", setLargeValueResult)
 
 	getResult := testing.Benchmark(func(b *testing.B) {
 		if shouldSkip("get") {
