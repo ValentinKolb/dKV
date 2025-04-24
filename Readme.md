@@ -8,7 +8,6 @@ time-based operations, distributed locking, and modular architecture.
 [![GoDoc](https://pkg.go.dev/badge/github.com/ValentinKolb/dKV.svg)](https://pkg.go.dev/github.com/ValentinKolb/dKV)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Build Status](https://github.com/ValentinKolb/dKV/actions/workflows/docker.yml/badge.svg)](https://github.com/ValentinKolb/dKV/actions/workflows/docker.yml)
-[![Docker Image](https://img.shields.io/badge/docker-ready-blue.svg)](https://hub.docker.com/r/yourusername/yourimage)
 [![Build Status](https://github.com/ValentinKolb/dKV/actions/workflows/release.yml/badge.svg)](https://github.com/ValentinKolb/dKV/actions/release/docker.yml)
 [![Latest Release](https://img.shields.io/github/v/release/ValentinKolb/dKV)](https://github.com/ValentinKolb/dKV/releases)
 [![Benchmarks](https://img.shields.io/badge/Benchmarks-blue?logo=readme&logoColor=green)](https://github.com/ValentinKolb/dKV/tree/main/benchmarks)
@@ -17,7 +16,7 @@ time-based operations, distributed locking, and modular architecture.
 
 . **[Quick Start](#quick-start)** . **[Configuration](#configuration)** . **[Benchmarks](#benchmarks)** .
 **[Architecture Overview](#architecture-overview)** . **[Detailed Usage](#detailed-usage)** .
-**[License](#license)** . **[Acknowledgments](#acknowledgments)** .
+**[License](#license)** .
 
 ---
 
@@ -25,9 +24,9 @@ time-based operations, distributed locking, and modular architecture.
 
 ## Quick Start
 
-### Installation
+### Client
 
-The recommended way to install dKV is using the installation script:
+The recommended way to install the dKV client is using the installation script:
 
 ```bash
 curl -s https://raw.githubusercontent.com/ValentinKolb/dKV/refs/heads/main/install.sh | bash
@@ -35,7 +34,8 @@ curl -s https://raw.githubusercontent.com/ValentinKolb/dKV/refs/heads/main/insta
 
 The script automatically detects your operating system and architecture, and installs the appropriate binary.
 
-#### Installation Options
+<details>
+<summary>Installation Options</summary>
 
 ```bash
 # Install to a custom location
@@ -47,6 +47,7 @@ curl -s https://raw.githubusercontent.com/ValentinKolb/dKV/refs/heads/main/insta
 # Show help and all available options
 curl -s https://raw.githubusercontent.com/ValentinKolb/dKV/refs/heads/main/install.sh | bash -s -- --help
 ```
+</details>
 
 ### Usage
 
