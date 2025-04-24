@@ -55,7 +55,7 @@ It is recommended to use docker to deploy the server. The following command star
 ```bash
 export DKV_TIMEOUT=10 # Set config values for the server as env vars 
 
-bench run -p 8080:8080 ghcr.io/valentinkolb/dkv:latest --transport-workers=100 # <- set dkv config flags here
+docker run -p 8080:8080 ghcr.io/valentinkolb/dkv:latest --transport-workers=100 # <- set dkv config flags here
 ```
 
 Multiple example docker compose files are provided:
@@ -95,7 +95,7 @@ DKV_LOG_LEVEL=debug
 
 ![bench](./benchmarks/assets/dkv-cluster-analysis.png)
 
-For full detail see [here](https://github.com/ValentinKolb/dKV/tree/main/benchmarks).
+For in detail benchmarks and comparisons see [here](https://github.com/ValentinKolb/dKV/tree/main/benchmarks).
 
 ## Architecture Overview
 
@@ -179,6 +179,18 @@ The outermost component enables remote communication with interchangeable transp
 The server supports both local and distributed instances at the same time, allowing flexible deployment configurations. Here's how to set up a three-node cluster:
 
 ```bash
+docker compose -f examples/compose-multi-node.yml up
+```
+
+This creates a cluster with three nodes (if called three time for different ID's), each running:
+- Shard `100`: Local store (not replicated)
+- Shard `200`: Distributed store (replicated across all nodes)
+- Shard `300`: Distributed lock manager (using the distributed store)
+
+<details>
+<summary>Start server via cli</summary>
+
+```bash
 # Start a three-node cluster (run for IDs 1, 2, and 3)
 ID=1 # Change this for each node
 dkv serve \
@@ -197,10 +209,7 @@ dkv serve \
   --timeout=5
 ```
 
-This creates a cluster with three nodes (if called three time for different ID's), each running:
-- Shard `100`: Local store (not replicated)
-- Shard `200`: Distributed store (replicated across all nodes)
-- Shard `300`: Distributed lock manager (using the distributed store)
+</details>
 
 ### Client Operations
 
@@ -339,14 +348,6 @@ import (
 
 func main() {
 	// Create client configuration
-	config := common.ClientConfig{
-		Endpoints: []string{"localhost:8080"},
-		TimeoutSecond: 1,
-		RetryCount: 3,
-		ConnectionsPerEndpoint: 5,
-	}
-
-
 	config :=  common.ClientConfig{
 		TimeoutSecond: viper.GetInt("timeout"),
 		Transport: common.ClientTransportConfig{

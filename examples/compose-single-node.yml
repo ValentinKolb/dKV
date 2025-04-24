@@ -1,41 +1,10 @@
 services:
-  dkv-client:
-    image: ghcr.io/valentinkolb/dkv:latest
-    environment:
-      # Environment variables for the dkv server
-      SHARDS: "100=lstore,200=lockmgr(lstore)" # Which shards to create
-
-      # Go runtime configuration
-      GOGC: 100 # A lower value will use more memory, a higher value will use less but will be slower
-      GOMEMLIMIT: "2GiB"
-      GOMAXPROCS: 4 # Should be set to the number of CPU cores available
-
-      # DVK specific configuration
-      DKV_LOG_LEVEL: "info"
-      DKV_TIMEOUT: 15 # Timeout in seconds, used for various operations
-
-      # RPC Server
-      DKV_SERIALIZER: "binary"
-      DKV_TRANSPORT: "tcp"
-      DKV_TRANSPORT_WORKERS: 10 # Number of workers per connection, higher values may improve performance but increase memory usage
-      DKV_TRANSPORT_WRITE_BUFFER: 512 # The size of the write buffer for the transport (in KB, ignored for http)
-      DKV_TRANSPORT_READ_BUFFER: 512 # The size of the read buffer for the transport (in KB, ignored for http)
-      DKV_TRANSPORT_TCP_NODELAY: true # Whether to enable TCP_NODELAY for the transport (only for TCP)
-      DKV_TRANSPORT_TCP_KEEP_ALIVE: 60 # The keep-alive interval for the transport (in seconds, only for TCP)
-      DKV_TRANSPORT_TCP_LINGER: 10 # The maximum idle time for the transport (in seconds, only for TCP)
-      # DKV_TRANSPORT_ENDPOINT: "0.0.0.0:8080" Change bench internal address of the RPC server, e.g. "/path/to/socket.sock" for a unix socket
-    deploy:
-      resources: # Adjust resource limits and reservations as needed
-        limits:
-          # cpus: '4' Uncomment if you want to limit the number of CPUs
-          memory: 2G
-        reservations:
-          cpus: '1'
-          memory: 2G
   dkv-server:
     image: ghcr.io/valentinkolb/dkv:latest
     container_name: dkv
     restart: unless-stopped
+    ports:
+      - "8080:8080" # Expose the RPC server on port 8080
 
     environment:
       # Environment variables for the dkv server
@@ -63,7 +32,7 @@ services:
     deploy:
       resources: # Adjust resource limits and reservations as needed
         limits:
-          # cpus: '4' Uncomment if you want to limit the number of CPUs
+          # cpus: '4' # Uncomment if you want to limit the number of CPUs
           memory: 2G
         reservations:
           cpus: '1'

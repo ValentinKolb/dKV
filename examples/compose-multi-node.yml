@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Common env variables for all nodes
 x-dkv-common-env: &dkv-common-env
   # Go runtime configuration

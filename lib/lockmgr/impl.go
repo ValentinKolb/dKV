@@ -52,7 +52,7 @@ func (lp *logMgmImpl) ReleaseLock(key string, ownerID []byte) (bool, error) {
 	}
 
 	// Check if the lock is owned by us
-	if bytes.Equal(ownerID, value) {
+	if !bytes.Equal(ownerID, value) {
 		return false, nil
 	}
 

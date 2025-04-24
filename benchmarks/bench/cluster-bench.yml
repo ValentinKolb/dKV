@@ -22,7 +22,7 @@ x-dkv-common-env: &dkv-common-env
   # RPC configuration (client an server)
   DKV_SERIALIZER: "binary"
   DKV_TRANSPORT: "tcp"
-  DKV_TRANSPORT_WORKERS: 50
+  DKV_TRANSPORT_WORKERS: 10
   DKV_TRANSPORT_WRITE_BUFFER: 512
   DKV_TRANSPORT_READ_BUFFER: 512
   DKV_TRANSPORT_TCP_NODELAY: "true"
