@@ -3,7 +3,6 @@ module github.com/ValentinKolb/dKV
 go 1.23
 
 require (
-	github.com/VictoriaMetrics/metrics v1.18.1
 	github.com/joho/godotenv v1.5.1
 	github.com/lni/dragonboat/v4 v4.0.0-20240618143154-6a1623140f27
 	github.com/puzpuzpuz/xsync/v3 v3.5.1
@@ -15,6 +14,7 @@ require (
 require (
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
+	github.com/VictoriaMetrics/metrics v1.18.1 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cockroachdb/errors v1.9.0 // indirect
