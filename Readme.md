@@ -1,8 +1,8 @@
 ![Logo](./assets/Logo.png)
 
-**dKV** is a distributed, consistent key-value store library written in Go, leveraging RAFT consensus for
-linearizability and fault tolerance. Features include high performance, strong consistency, flexible deployment,
-time-based operations, distributed locking, and modular architecture.
+**dKV** is a distributed, consistent key-value store library written in Go, leveraging RAFT consensus.
+Features include high performance, linearizable consistency, fault tolerance, 
+flexible deployment, time-based operations, distributed locking, and modular architecture.
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/ValentinKolb/dKV)](https://goreportcard.com/report/github.com/ValentinKolb/dKV)
 [![GoDoc](https://pkg.go.dev/badge/github.com/ValentinKolb/dKV.svg)](https://pkg.go.dev/github.com/ValentinKolb/dKV)
